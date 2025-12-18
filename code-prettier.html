@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Prettier - HTML 工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Prettier & Plugins -->
+    <script src="https://unpkg.com/prettier@3.1.1/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/estree.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/babel.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/html.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/postcss.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/yaml.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/markdown.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.1/plugins/typescript.js"></script>
+    
+    <style>
+        .editor-container {
+            height: calc(100vh - 200px);
+        }
+        textarea {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-900">Code Prettier</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <select id="languageSelect" class="block w-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border">
+                <option value="json">JSON</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="markdown">Markdown</option>
+                <option value="yaml">YAML</option>
+            </select>
+            <button id="formatBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                Format
+            </button>
+            <button id="copyBtn" class="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 border border-gray-300 rounded-md transition-colors">
+                Copy
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-6 flex flex-col">
+        <div class="flex-grow relative border rounded-lg shadow-sm overflow-hidden bg-white">
+            <textarea 
+                id="editor" 
+                class="w-full h-full p-4 resize-none focus:outline-none text-sm leading-relaxed text-gray-800"
+                placeholder="Paste your code here..."
+                spellcheck="false"
+            ></textarea>
+            
+            <!-- Status/Error Message -->
+            <div id="statusMsg" class="absolute bottom-0 left-0 right-0 bg-red-50 text-red-600 px-4 py-2 text-sm border-t border-red-100 hidden">
+            </div>
+        </div>
+        <div class="mt-2 text-xs text-gray-500 text-right">
+            Powered by <a href="https://prettier.io/" target="_blank" class="underline hover:text-gray-700">Prettier</a>
+        </div>
+    </main>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const languageSelect = document.getElementById('languageSelect');
+        const formatBtn = document.getElementById('formatBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const statusMsg = document.getElementById('statusMsg');
+
+        const prettierPlugins = {
+            json: window.prettierPlugins.babel, // json uses babel parser usually or dedicated json
+            javascript: window.prettierPlugins.babel,
+            typescript: window.prettierPlugins.typescript,
+            html: window.prettierPlugins.html,
+            css: window.prettierPlugins.postcss,
+            markdown: window.prettierPlugins.markdown,
+            yaml: window.prettierPlugins.yaml
+        };
+
+        // Map selection values to Prettier parser names
+        const parserMap = {
+            json: 'json',
+            javascript: 'babel',
+            typescript: 'typescript',
+            html: 'html',
+            css: 'css',
+            markdown: 'markdown',
+            yaml: 'yaml'
+        };
+
+        async function formatCode() {
+            const code = editor.value;
+            const lang = languageSelect.value;
+            const parser = parserMap[lang];
+
+            if (!code.trim()) return;
+
+            try {
+                const formatted = await prettier.format(code, {
+                    parser: parser,
+                    plugins: [
+                        window.prettierPlugins.estree, // Needed for babel/typescript
+                        window.prettierPlugins.babel,
+                        window.prettierPlugins.typescript,
+                        window.prettierPlugins.html,
+                        window.prettierPlugins.postcss,
+                        window.prettierPlugins.markdown,
+                        window.prettierPlugins.yaml
+                    ],
+                    // Default options
+                    printWidth: 80,
+                    tabWidth: 2,
+                    semi: true,
+                    singleQuote: false,
+                });
+                editor.value = formatted;
+                showStatus('Formatted successfully!', 'success');
+            } catch (err) {
+                console.error(err);
+                showStatus(err.message, 'error');
+            }
+        }
+
+        function showStatus(msg, type) {
+            statusMsg.textContent = msg;
+            statusMsg.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-green-50', 'text-green-600');
+            
+            if (type === 'error') {
+                statusMsg.classList.add('bg-red-50', 'text-red-600');
+                statusMsg.classList.remove('hidden');
+            } else {
+                // Flash success message
+                // For success, we might not want a persistent bar, maybe just a toast or temporary text.
+                // Re-using the bar for simplicity but styling it green.
+                statusMsg.classList.add('bg-green-50', 'text-green-600');
+                statusMsg.classList.remove('hidden');
+                setTimeout(() => {
+                    statusMsg.classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        formatBtn.addEventListener('click', formatCode);
+
+        // Optional: Keyboard shortcut (Cmd/Ctrl + S or Enter)
+        editor.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                formatCode();
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            editor.select();
+            document.execCommand('copy');
+            // Or use navigator.clipboard.writeText(editor.value)
+            showStatus('Copied to clipboard!', 'success');
+            window.getSelection().removeAllRanges();
+        });
+
+        // Set default example based on language (optional)
+        const examples = {
+            json: '{"key": "value", "array": [1,2,3], "nested": { "a": 1 }}',
+        };
+
+        // Initialize with default if empty
+        if (!editor.value) {
+           // editor.value = examples.json;
+        }
+
+    </script>
+    <!-- 统一的 Footer -->
+    <footer class="mt-auto bg-white border-t border-gray-200 py-4 px-6">
+        <nav class="text-xs text-gray-600 space-x-4">
+            <a href="/" class="hover:text-blue-600 underline">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/README.md" class="hover:text-blue-600 underline" target="_blank">关于工具</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/code-prettier.html" class="hover:text-blue-600 underline" target="_blank">查看源码</a>
+            <span class="text-gray-400">更新于 2025-12-18</span>
+        </nav>
+    </footer>
+
+</body>
+</html>
