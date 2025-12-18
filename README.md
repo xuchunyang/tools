@@ -25,6 +25,7 @@
 每个工具都是独立的 `.html` 文件。
 1. 直接点击文件名在 GitHub 中查看（或通过 GitHub Pages 访问）。
 2. 或者下载到本地，双击在浏览器中打开即可运行。
+本项目已部署到 GitHub Pages，并可通过 [tools.xuchunyang.cn](https://tools.xuchunyang.cn) 访问。
 
 ## License
 
