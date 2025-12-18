@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 预览</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
+</head>
+<body class="bg-white h-screen flex flex-col overflow-hidden text-sm">
+
+    <!-- 顶部导航 & 工具栏 -->
+    <header class="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between shrink-0 z-20">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">HTML 预览</h1>
+
+        <!-- 右上角工具区 -->
+        <div class="flex items-center gap-4">
+            <!-- 设备切换 -->
+            <div class="flex bg-gray-100 p-0.5 rounded-md">
+                <button onclick="setDevice('desktop')" id="btn-desktop" class="p-1.5 rounded hover:bg-white hover:text-blue-600 text-gray-500 transition-colors" title="Desktop">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </button>
+                <button onclick="setDevice('tablet')" id="btn-tablet" class="p-1.5 rounded hover:bg-white hover:text-blue-600 text-gray-500 transition-colors" title="Tablet">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </button>
+                <button onclick="setDevice('mobile')" id="btn-mobile" class="p-1.5 rounded hover:bg-white hover:text-blue-600 text-gray-500 transition-colors" title="Mobile">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </button>
+            </div>
+
+            <div class="h-4 w-px bg-gray-300"></div>
+
+            <!-- 操作按钮 -->
+            <div class="flex items-center gap-2">
+                <button onclick="openWindow()" class="p-1.5 text-gray-500 hover:text-blue-600 transition-colors rounded hover:bg-gray-100" title="在新窗口打开">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体：左右分栏 -->
+    <main class="flex-1 flex flex-row overflow-hidden">
+        
+        <!-- 左侧：代码编辑 -->
+        <section class="w-1/2 flex flex-col border-r border-gray-200 bg-[#1e1e1e]">
+            <textarea id="source-code" 
+                class="flex-1 w-full bg-[#1e1e1e] text-gray-200 p-4 outline-none font-mono resize-none leading-relaxed"
+                spellcheck="false" placeholder="在此输入 HTML 代码..."></textarea>
+        </section>
+
+        <!-- 右侧：预览 -->
+        <section class="flex-1 bg-gray-100 relative overflow-hidden flex flex-col">
+            <!-- 预览容器 -->
+            <div class="flex-1 w-full h-full overflow-auto flex justify-center items-center p-4">
+                <div id="iframe-wrapper" class="bg-white shadow-xl transition-all duration-300 relative w-full h-full">
+                    <iframe id="preview-frame" class="w-full h-full border-0 block" sandbox="allow-scripts allow-modals"></iframe>
+                    <div id="size-tag" class="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 transition-opacity pointer-events-none font-mono"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 统一的 Footer -->
+    <footer class="shrink-0 text-xs text-gray-600 text-center py-4 bg-white border-t border-gray-200">
+        <nav class="flex justify-center space-x-6">
+            <a href="/" class="underline hover:text-blue-600 transition-colors">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/html-preview.html" class="underline hover:text-blue-600 transition-colors" target="_blank">查看源码</a>
+            <span class="text-gray-400">更新于 2025-12-18</span>
+        </nav>
+    </footer>
+
+    <script>
+        const els = {
+            code: document.getElementById('source-code'),
+            frame: document.getElementById('preview-frame'),
+            wrapper: document.getElementById('iframe-wrapper'),
+            sizeTag: document.getElementById('size-tag'),
+            btns: {
+                desktop: document.getElementById('btn-desktop'),
+                tablet: document.getElementById('btn-tablet'),
+                mobile: document.getElementById('btn-mobile')
+            }
+        };
+
+        // 无默认代码，无本地存储
+        function init() {
+            setDevice('desktop'); // 默认桌面视图
+            update();
+            els.code.addEventListener('input', update);
+        }
+
+        function update() {
+            const val = els.code.value;
+            // 不保存到 localStorage
+            els.frame.srcdoc = val;
+        }
+
+        function setDevice(type) {
+            // 不保存到 localStorage
+            
+            // 更新按钮状态
+            Object.keys(els.btns).forEach(k => {
+                const btn = els.btns[k];
+                if(k === type) {
+                    btn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+                    btn.classList.remove('text-gray-500');
+                } else {
+                    btn.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+                    btn.classList.add('text-gray-500');
+                }
+            });
+
+            // 更新容器尺寸
+            const s = els.wrapper.style;
+            const cl = els.wrapper.classList;
+            
+            if (type === 'mobile') {
+                s.width = '375px'; s.height = '667px';
+                cl.remove('w-full', 'h-full');
+                cl.add('rounded-xl');
+            } else if (type === 'tablet') {
+                s.width = '768px'; s.height = '1024px';
+                cl.remove('w-full', 'h-full');
+                cl.add('rounded-xl');
+            } else {
+                s.width = '100%'; s.height = '100%';
+                cl.add('w-full', 'h-full');
+                cl.remove('rounded-xl');
+            }
+            
+            showSize();
+        }
+
+        function showSize() {
+            const rect = els.wrapper.getBoundingClientRect();
+            els.sizeTag.textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+            els.sizeTag.classList.remove('opacity-0');
+            setTimeout(() => els.sizeTag.classList.add('opacity-0'), 1500);
+        }
+
+        function openWindow() {
+            const val = els.code.value;
+            if(!val.trim()) return; // 空代码不打开
+
+            const blob = new Blob([val], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const w = 1024, h = 768;
+            const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
+            window.open(url, 'preview', `width=${w},height=${h},left=${left},top=${top}`);
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 小工具集</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <div class="flex-grow p-6 max-w-3xl">
+        <header class="mb-8">
+            <h1 class="text-2xl font-bold mb-3 text-gray-900">
+                HTML 小工具集
+            </h1>
+            <p class="text-sm text-gray-600 leading-relaxed">
+                一个自用的单页面 Web 工具集合，灵感来源于 <a href="https://simonwillison.net/2025/Dec/10/html-tools/" class="text-blue-600 hover:text-blue-800 underline" target="_blank">Simon Willison's HTML Tools</a>。
+                每个工具都是独立的 HTML 文件，完全在浏览器端运行，无后端依赖，并主要通过 AI 辅助构建。
+            </p>
+        </header>
+
+        <section class="mb-8">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">工具列表</h2>
+            <ul class="list-disc list-inside space-y-3 text-gray-700">
+                <li class="pl-2">
+                    <a href="html-preview.html" class="text-blue-600 hover:text-blue-800 underline font-medium">HTML Preview</a>
+                    <span class="text-gray-600 ml-2">
+                        一个预览 HTML 的工具
+                    </span>
+                </li>
+            </ul>
+        </section>
+    </div>
+
+    <!-- 统一的 Footer -->
+    <footer class="mt-auto bg-white border-t border-gray-200 py-4 px-6">
+        <nav class="text-xs text-gray-600 space-x-4">
+            <a href="/" class="hover:text-blue-600 underline">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/README.md" class="hover:text-blue-600 underline" target="_blank">关于工具</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/index.html" class="hover:text-blue-600 underline" target="_blank">查看源码</a>
+            <span class="text-gray-400">更新于 2025-12-18</span>
+        </nav>
+    </footer>
+
+</body>
+</html>
