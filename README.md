@@ -10,16 +10,6 @@
 - **无后端 (No Backend)**: 所有逻辑完全在浏览器端运行，确保隐私安全，无需服务器支持。
 - **AI 辅助构建 (AI Generated)**: 利用 LLM (如 ChatGPT, Claude, Gemini) 快速实现功能原型并迭代完善。
 
-## 工具列表 (Tools)
-
-### 计划中 (Planned)
-
-| 工具名称 | 描述 | 状态 |
-| :--- | :--- | :--- |
-| **HTML Live Preview** | 一个极简的 HTML/CSS/JS 实时编辑器和预览器。 | 🚧 待开发 |
-| **Code Prettier** | 纯前端运行的代码格式化工具 (基于 Prettier 浏览器版)。 | 🚧 待开发 |
-| **Image to WebP** | 利用浏览器的 Canvas 能力，将 JPG/PNG 图片批量转换为 WebP 格式。 | 🚧 待开发 |
-
 ## 如何使用
 
 每个工具都是独立的 `.html` 文件。
