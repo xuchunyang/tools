@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown 预览</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        /* Typography for preview */
+        .prose { max-width: none; }
+        .prose h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .prose h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .prose h3 { font-size: 1.25em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .prose p { margin-bottom: 1em; line-height: 1.6; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+        .prose pre { background-color: #f3f4f6; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-bottom: 1em; }
+        .prose code { font-family: monospace; background-color: #f3f4f6; padding: 0.2em 0.4em; border-radius: 0.25em; }
+        .prose pre code { background-color: transparent; padding: 0; }
+        .prose blockquote { border-left: 4px solid #e5e7eb; padding-left: 1em; color: #4b5563; margin-bottom: 1em; }
+        .prose a { color: #2563eb; text-decoration: underline; }
+        .prose a:hover { color: #1d4ed8; }
+        .prose img { max-width: 100%; height: auto; border-radius: 0.5em; }
+        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        .prose th, .prose td { border: 1px solid #e5e7eb; padding: 0.5em; text-align: left; }
+        .prose th { background-color: #f9fafb; font-weight: 600; }
+        .prose hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2em 0; }
+    </style>
+</head>
+<body class="bg-white h-screen flex flex-col overflow-hidden text-sm">
+
+    <!-- 顶部导航 & 工具栏 -->
+    <header class="bg-white border-b border-gray-200 px-4 h-12 flex items-center justify-between shrink-0 z-20">
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">Markdown 预览</h1>
+
+        <!-- 右上角工具区 -->
+        <div class="flex items-center gap-4">
+            <!-- 复制按钮 -->
+            <button onclick="copyHtml()" class="text-gray-500 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs font-medium border border-gray-200 px-2 py-1 rounded hover:bg-gray-50">
+                <span>复制 HTML</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主体：左右分栏 -->
+    <main class="flex-1 flex flex-row overflow-hidden">
+        
+        <!-- 左侧：Markdown 编辑 -->
+        <section class="w-1/2 flex flex-col border-r border-gray-200 bg-[#1e1e1e]">
+            <textarea id="source-code" 
+                class="flex-1 w-full bg-[#1e1e1e] text-gray-200 p-4 outline-none font-mono resize-none leading-relaxed"
+                spellcheck="false" placeholder="在此输入 Markdown 代码..."># Hello Markdown
+
+Try typing some **Markdown** here!
+
+- List item 1
+- List item 2
+
+```javascript
+console.log('Hello World');
+```</textarea>
+        </section>
+
+        <!-- 右侧：预览 -->
+        <section class="w-1/2 bg-white flex flex-col">
+            <div id="preview-container" class="flex-1 w-full p-8 overflow-auto prose text-gray-800">
+                <!-- 渲染内容将出现在这里 -->
+            </div>
+        </section>
+    </main>
+
+    <!-- 统一的 Footer -->
+    <footer class="shrink-0 text-xs text-gray-600 text-center py-4 bg-white border-t border-gray-200">
+        <nav class="flex justify-center space-x-6">
+            <a href="/" class="underline hover:text-blue-600 transition-colors">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/markdown-preview.html" class="underline hover:text-blue-600 transition-colors" target="_blank">查看源码</a>
+            <span class="text-gray-400">更新于 2025-12-19</span>
+        </nav>
+    </footer>
+
+    <script>
+        const els = {
+            code: document.getElementById('source-code'),
+            preview: document.getElementById('preview-container')
+        };
+
+        function init() {
+            update();
+            els.code.addEventListener('input', update);
+        }
+
+        function update() {
+            const val = els.code.value;
+            // 使用 marked 解析 markdown
+            els.preview.innerHTML = marked.parse(val);
+        }
+
+        function copyHtml() {
+            const html = els.preview.innerHTML;
+            navigator.clipboard.writeText(html).then(() => {
+                alert('HTML 已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
