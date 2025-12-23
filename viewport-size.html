@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewport Size - HTML 小工具集</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .value-card {
+            transition: all 0.3s ease;
+        }
+        .value-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <div class="flex-grow p-6">
+        <header class="mb-8 max-w-3xl mx-auto">
+            <h1 class="text-2xl font-bold mb-3 text-gray-900">
+                Viewport Size
+            </h1>
+            <p class="text-sm text-gray-600 leading-relaxed">
+                查看当前设备可视区域 (Viewport) 的尺寸信息。调整浏览器窗口大小时会自动更新。
+            </p>
+        </header>
+
+        <main class="max-w-3xl mx-auto space-y-6">
+            
+            <!-- Main Viewport Info -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Viewport Dimensions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="value-card bg-blue-50 p-4 rounded-md border border-blue-100 text-center">
+                        <div class="text-xs text-blue-600 uppercase font-bold tracking-wider mb-1">Width</div>
+                        <div class="text-4xl font-mono font-bold text-blue-900" id="vp-width">--</div>
+                        <div class="text-xs text-blue-500 mt-1">px</div>
+                    </div>
+                    <div class="value-card bg-green-50 p-4 rounded-md border border-green-100 text-center">
+                        <div class="text-xs text-green-600 uppercase font-bold tracking-wider mb-1">Height</div>
+                        <div class="text-4xl font-mono font-bold text-green-900" id="vp-height">--</div>
+                        <div class="text-xs text-green-500 mt-1">px</div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center text-gray-500 text-sm font-mono bg-gray-100 p-2 rounded">
+                    CSS Media Query: <span id="mq-string" class="font-bold text-gray-700">--</span>
+                </div>
+            </div>
+
+            <!-- Additional Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Screen Info -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-md font-semibold text-gray-900 mb-3">Screen Resolution</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="text-gray-600">Screen Width</span>
+                            <span class="font-mono font-medium text-gray-900" id="screen-width">--</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="text-gray-600">Screen Height</span>
+                            <span class="font-mono font-medium text-gray-900" id="screen-height">--</span>
+                        </div>
+                         <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="text-gray-600">Color Depth</span>
+                            <span class="font-mono font-medium text-gray-900" id="color-depth">--</span>
+                        </div>
+                         <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Orientation</span>
+                            <span class="font-mono font-medium text-gray-900" id="orientation">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Info -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-md font-semibold text-gray-900 mb-3">Device Info</h3>
+                    <div class="space-y-3">
+                         <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="text-gray-600">Device Pixel Ratio (DPR)</span>
+                            <span class="font-mono font-medium text-gray-900" id="dpr">--</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <span class="text-gray-600">User Agent</span>
+                            <div class="text-right truncate w-40" title="" id="ua-container">
+                                <span class="font-mono font-medium text-gray-900 text-xs" id="ua">--</span>
+                            </div>
+                        </div>
+                         <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Touch Support</span>
+                            <span class="font-mono font-medium text-gray-900" id="touch-support">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 统一的 Footer -->
+    <footer class="mt-auto bg-white border-t border-gray-200 py-4 px-6">
+        <nav class="text-xs text-gray-600 space-x-4">
+            <a href="index.html" class="hover:text-blue-600 underline">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/viewport-size.html" class="hover:text-blue-600 underline" target="_blank">查看源码</a>
+        </nav>
+    </footer>
+
+    <script>
+        function updateInfo() {
+            // Viewport
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            document.getElementById('vp-width').textContent = w;
+            document.getElementById('vp-height').textContent = h;
+            document.getElementById('mq-string').textContent = `(width: ${w}px) and (height: ${h}px)`;
+
+            // Screen
+            document.getElementById('screen-width').textContent = screen.width + 'px';
+            document.getElementById('screen-height').textContent = screen.height + 'px';
+            document.getElementById('color-depth').textContent = screen.colorDepth + '-bit';
+            
+            const orientationType = (screen.orientation || {}).type || window.orientation || 'unknown';
+            document.getElementById('orientation').textContent = orientationType;
+
+            // Device
+            document.getElementById('dpr').textContent = window.devicePixelRatio.toFixed(2);
+            
+            const ua = navigator.userAgent;
+            const uaEl = document.getElementById('ua');
+            uaEl.textContent = ua;
+            document.getElementById('ua-container').title = ua;
+
+            const touchSupport = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            document.getElementById('touch-support').textContent = touchSupport ? 'Yes' : 'No';
+        }
+
+        // Init
+        updateInfo();
+
+        // Events
+        window.addEventListener('resize', updateInfo);
+        
+        // Listen for orientation changes if supported
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', updateInfo);
+        } else {
+            window.addEventListener('orientationchange', updateInfo);
+        }
+    </script>
+</body>
+</html>
