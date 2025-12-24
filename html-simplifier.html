@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Simplifier - 在线工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.14.9/js/lib/beautifier.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col p-6">
+    <div class="max-w-4xl mx-auto w-full flex-grow">
+        <header class="mb-8">
+            <nav class="mb-4">
+                <a href="index.html" class="text-blue-600 hover:underline text-sm">← 返回首页</a>
+            </nav>
+            <h1 class="text-2xl font-bold mb-3 text-gray-900">HTML Simplifier</h1>
+            <p class="text-sm text-gray-600 leading-relaxed">
+                删除 HTML 中的 class、style、脚本、注释等，只保留结构本身。
+                主要用于减少发送给 LLM 的 Token 数量，避免超出上下文窗口。
+            </p>
+        </header>
+
+        <main class="space-y-6">
+            <div class="bg-white p-4 border border-gray-200 rounded-lg shadow-sm space-y-3">
+                <h2 class="text-sm font-semibold text-gray-700">保留选项</h2>
+                <div class="flex flex-wrap gap-4">
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepClass" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 Class</span>
+                    </label>
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepId" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 ID</span>
+                    </label>
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepHref" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 链接 (href)</span>
+                    </label>
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepSrc" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 资源 (src)</span>
+                    </label>
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepSvg" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 SVG</span>
+                    </label>
+                    <label class="inline-flex items-center text-sm text-gray-600">
+                        <input type="checkbox" id="keepImg" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        <span class="ml-2">保留 图片 (img)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col">
+                    <label for="inputHtml" class="block text-sm font-medium text-gray-700 mb-2">输入 HTML</label>
+                    <textarea id="inputHtml" class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 font-mono text-sm h-96" placeholder="在此粘贴原始 HTML..."></textarea>
+                    <div id="inputStats" class="mt-1 text-xs text-gray-500 text-right"></div>
+                </div>
+                <div class="flex flex-col">
+                    <label for="outputHtml" class="block text-sm font-medium text-gray-700 mb-2">简化后的 HTML</label>
+                    <textarea id="outputHtml" readonly class="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm bg-gray-100 font-mono text-sm h-96" placeholder="简化后的结果将显示在这里..."></textarea>
+                    <div id="outputStats" class="mt-1 text-xs text-gray-500 text-right"></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div id="reductionStats" class="text-sm font-medium text-green-600"></div>
+                <div class="flex justify-end space-x-3 w-full md:w-auto">
+                    <button id="copyBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        复制结果
+                    </button>
+                    <button id="simplifyBtn" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        开始简化
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="mt-12 text-center text-xs text-gray-400">
+        HTML Simplifier - 保持结构，极致精简
+    </footer>
+
+    <script>
+        function formatSize(len) {
+            return len.toLocaleString() + ' 字符';
+        }
+
+        document.getElementById('simplifyBtn').addEventListener('click', function() {
+            const input = document.getElementById('inputHtml').value;
+            if (!input.trim()) return;
+
+            const originalLen = input.length;
+            document.getElementById('inputStats').innerText = `原始大小: ${formatSize(originalLen)}`;
+
+            const keepClass = document.getElementById('keepClass').checked;
+            const keepId = document.getElementById('keepId').checked;
+            const keepHref = document.getElementById('keepHref').checked;
+            const keepSrc = document.getElementById('keepSrc').checked;
+            const keepSvg = document.getElementById('keepSvg').checked;
+            const keepImg = document.getElementById('keepImg').checked;
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(input, 'text/html');
+
+            // 1. 删除所有不需要的元素类型
+            let toRemoveSelector = 'script, style, link, noscript, iframe, canvas, video, audio, source, track, embed, object, param';
+            if (!keepSvg) toRemoveSelector += ', svg';
+            if (!keepImg) toRemoveSelector += ', img';
+            
+            doc.querySelectorAll(toRemoveSelector).forEach(el => el.remove());
+
+            // 递归清理节点属性
+            function cleanNode(node) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 2. 删除属性，除非被勾选保留
+                    const attrs = Array.from(node.attributes);
+                    for (let attr of attrs) {
+                        let shouldKeep = false;
+                        if (attr.name === 'class' && keepClass) shouldKeep = true;
+                        else if (attr.name === 'id' && keepId) shouldKeep = true;
+                        else if (attr.name === 'href' && keepHref) shouldKeep = true;
+                        else if (attr.name === 'src' && keepSrc) shouldKeep = true;
+                        
+                        if (!shouldKeep) {
+                            node.removeAttribute(attr.name);
+                        }
+                    }
+                    
+                    // 递归处理子节点
+                    const childNodes = Array.from(node.childNodes);
+                    for (let child of childNodes) {
+                        cleanNode(child);
+                    }
+                } else if (node.nodeType === Node.COMMENT_NODE) {
+                    node.remove();
+                } else if (node.nodeType === Node.TEXT_NODE) {
+                    if (node.textContent.trim() === '') {
+                        node.textContent = '';
+                    } else {
+                        node.textContent = node.textContent.replace(/\s+/g, ' ');
+                    }
+                }
+            }
+
+            // 处理整个文档
+            cleanNode(doc.documentElement);
+
+            // 决定输出范围：如果输入包含 <html，则输出整个文档，否则只输出 body 内容
+            let resultHtml = '';
+            if (input.toLowerCase().includes('<html')) {
+                resultHtml = doc.documentElement.outerHTML;
+            } else if (input.toLowerCase().includes('<body')) {
+                resultHtml = doc.body.outerHTML;
+            } else {
+                resultHtml = doc.body.innerHTML;
+            }
+
+            // 4. 格式化 HTML
+            if (window.html_beautify) {
+                resultHtml = html_beautify(resultHtml, {
+                    indent_size: 2,
+                    indent_char: ' ',
+                    max_preserve_newlines: 0,
+                    preserve_newlines: false,
+                    keep_array_indentation: false,
+                    break_chained_methods: false,
+                    indent_scripts: 'normal',
+                    brace_style: 'collapse',
+                    space_before_conditional: true,
+                    unescape_strings: false,
+                    jslint_happy: false,
+                    end_with_newline: false,
+                    wrap_line_length: 0,
+                    indent_inner_html: false,
+                    comma_first: false,
+                    e4x: false,
+                    indent_empty_lines: false
+                });
+            }
+
+            document.getElementById('outputHtml').value = resultHtml.trim();
+
+            const simplifiedLen = resultHtml.trim().length;
+            document.getElementById('outputStats').innerText = `简化后: ${formatSize(simplifiedLen)}`;
+            
+            const reduction = originalLen - simplifiedLen;
+            const percent = originalLen > 0 ? ((reduction / originalLen) * 100).toFixed(1) : 0;
+            document.getElementById('reductionStats').innerText = `已减少 ${formatSize(reduction)} (${percent}%)`;
+        });
+
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            const output = document.getElementById('outputHtml');
+            if (!output.value) return;
+            
+            output.select();
+            navigator.clipboard.writeText(output.value).then(() => {
+                const originalText = this.innerText;
+                this.innerText = '已复制！';
+                this.classList.add('text-green-600');
+                setTimeout(() => {
+                    this.innerText = originalText;
+                    this.classList.remove('text-green-600');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
