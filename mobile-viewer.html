@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Device Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light dark;
+            --ink: #0b0b10;
+            --paper: #f6f2ec;
+            --accent: #ff6b4a;
+            --accent-dark: #e65435;
+            --forest: #1b1f1a;
+            --mist: #9aa2a7;
+            --grid: rgba(16, 18, 28, 0.07);
+            --panel: rgba(255, 255, 255, 0.82);
+            --panel-border: rgba(19, 22, 33, 0.08);
+            --panel-shadow: 0 16px 40px rgba(20, 20, 30, 0.1);
+            --input-border: rgba(20, 22, 34, 0.15);
+            --text-muted: #3a3a45;
+            --text-soft: #6c6c77;
+            --chip-bg: #fff1ec;
+            --chip-text: #6a2a1c;
+            --chip-border: rgba(255, 107, 74, 0.25);
+            --toggle-border: rgba(20, 22, 34, 0.2);
+            --toggle-active: #1f222b;
+            --toggle-active-text: #fdf8f2;
+            --device-shell: linear-gradient(160deg, #0d0d12 0%, #1e1f2c 50%, #09090c 100%);
+            --device-shell-border: rgba(255, 255, 255, 0.08);
+            --device-highlight: linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 55%);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ink: #f6f1eb;
+                --paper: #0f1116;
+                --accent: #ff8a6e;
+                --accent-dark: #ff6b4a;
+                --forest: #f0ece6;
+                --mist: #767c86;
+                --grid: rgba(240, 240, 245, 0.08);
+                --panel: rgba(20, 22, 28, 0.88);
+                --panel-border: rgba(240, 240, 245, 0.12);
+                --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+                --input-border: rgba(240, 240, 245, 0.16);
+                --text-muted: #c9c4bd;
+                --text-soft: #9da3ad;
+                --chip-bg: rgba(255, 138, 110, 0.14);
+                --chip-text: #ffd3c6;
+                --chip-border: rgba(255, 138, 110, 0.35);
+                --toggle-border: rgba(240, 240, 245, 0.2);
+                --toggle-active: #f6f1eb;
+                --toggle-active-text: #14161b;
+                --device-shell: linear-gradient(160deg, #07080b 0%, #12131b 50%, #040405 100%);
+                --device-shell-border: rgba(255, 255, 255, 0.05);
+                --device-highlight: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 55%);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+            color: var(--forest);
+            background: radial-gradient(circle at 20% 20%, #fff3e5 0%, #f0e8df 30%, #e8e5e1 70%, #ded9d2 100%);
+            min-height: 100vh;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: radial-gradient(circle at 15% 20%, #1b1c22 0%, #12141a 45%, #0c0e13 75%, #090a0f 100%);
+            }
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+                linear-gradient(180deg, var(--grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.7;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .hero h1 {
+            font-family: "Fraunces", "Times New Roman", serif;
+            font-size: clamp(2.2rem, 2vw + 1.8rem, 3rem);
+            margin: 0;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        .hero p {
+            margin: 0;
+            max-width: 720px;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 20px 22px 18px;
+            box-shadow: var(--panel-shadow);
+            backdrop-filter: blur(6px);
+        }
+
+        .controls label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex: 1 1 280px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            font-size: 0.95rem;
+            background: var(--paper);
+            color: var(--ink);
+        }
+
+        .input-row button {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .input-row button.secondary {
+            background: #2a2f39;
+        }
+
+        .input-row button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(10, 10, 20, 0.15);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        select,
+        input[type="range"] {
+            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            background: var(--paper);
+            color: var(--ink);
+        }
+
+        .toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle button {
+            flex: 1;
+            border-radius: 999px;
+            border: 1px solid var(--toggle-border);
+            padding: 8px 12px;
+            background: transparent;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+            color: var(--ink);
+        }
+
+        .toggle button.is-active {
+            background: var(--toggle-active);
+            color: var(--toggle-active-text);
+        }
+
+        .info-chip {
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: var(--chip-bg);
+            color: var(--chip-text);
+            font-weight: 600;
+            border: 1px solid var(--chip-border);
+        }
+
+        .note {
+            font-size: 0.9rem;
+            color: var(--text-soft);
+        }
+
+        .stage {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0 40px;
+        }
+
+        .device-wrap {
+            position: relative;
+            transform: scale(var(--device-scale));
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        .device {
+            position: relative;
+            width: calc(var(--device-w) * 1px);
+            height: calc(var(--device-h) * 1px);
+            border-radius: calc(var(--device-radius) * 1px);
+            padding: 14px;
+            background: var(--device-shell);
+            box-shadow: 0 30px 80px rgba(7, 10, 18, 0.35), 0 18px 40px rgba(0, 0, 0, 0.18);
+            border: 1px solid var(--device-shell-border);
+        }
+
+        .device::after {
+            content: "";
+            position: absolute;
+            inset: 10px;
+            border-radius: calc((var(--device-radius) - 10) * 1px);
+            background: var(--device-highlight);
+            pointer-events: none;
+        }
+
+        .device-screen {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: calc((var(--device-radius) - 16) * 1px);
+            background: #0a0b0f;
+            overflow: hidden;
+        }
+
+        .safe-area {
+            position: absolute;
+            top: calc(var(--safe-top) * 1px);
+            bottom: calc(var(--safe-bottom) * 1px);
+            left: calc(var(--safe-left) * 1px);
+            right: calc(var(--safe-right) * 1px);
+        }
+
+        .safe-area iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: var(--paper);
+            border-radius: 12px;
+        }
+
+        .notch {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(var(--notch-w) * 1px);
+            height: calc(var(--notch-h) * 1px);
+            background: #050506;
+            border-radius: calc(var(--notch-radius) * 1px);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+            z-index: 2;
+        }
+
+        .side-button {
+            position: absolute;
+            width: 4px;
+            height: 48px;
+            border-radius: 99px;
+            background: linear-gradient(180deg, #4a4b57, #1f2029);
+            right: -6px;
+            top: 120px;
+        }
+
+        .side-button.secondary {
+            height: 80px;
+            top: 190px;
+        }
+
+        @media (max-width: 900px) {
+            .page {
+                padding: 24px 16px 40px;
+            }
+
+            .device-wrap {
+                transform: scale(0.78);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <h1>Mobile Device Viewer</h1>
+            <p>Select a device, enter any URL, and preview the page as it would appear on a real handset. Use scale and orientation to compare breakpoints fast.</p>
+        </header>
+
+        <section class="controls">
+            <div class="control">
+                <label for="urlInput">Page URL</label>
+                <div class="input-row">
+                    <input id="urlInput" type="text" placeholder="https://example.com" value="https://example.com">
+                    <button id="loadBtn" type="button">Load</button>
+                    <button id="openBtn" type="button" class="secondary">Open in Tab</button>
+                </div>
+            </div>
+
+            <div class="control-grid">
+                <div class="control">
+                    <label for="deviceSelect">Device Preset</label>
+                    <select id="deviceSelect"></select>
+                </div>
+                <div class="control">
+                    <label>Orientation</label>
+                    <div class="toggle" role="group" aria-label="Orientation">
+                        <button class="toggle-btn is-active" type="button" data-orientation="portrait">Portrait</button>
+                        <button class="toggle-btn" type="button" data-orientation="landscape">Landscape</button>
+                    </div>
+                </div>
+                <div class="control">
+                    <label for="scaleRange">Scale</label>
+                    <input id="scaleRange" type="range" min="0.4" max="1" step="0.05" value="0.85">
+                </div>
+                <div class="control">
+                    <label>Viewport</label>
+                    <div id="viewportInfo" class="info-chip">—</div>
+                </div>
+            </div>
+
+            <div class="note">Note: Some websites block being embedded in iframes. If you see a blank screen, use “Open in Tab”.</div>
+        </section>
+
+        <section class="stage">
+            <div class="device-wrap" id="deviceWrap" style="--device-scale: 0.85;">
+                <div class="device" id="device">
+                    <div class="notch" id="notch"></div>
+                    <div class="side-button"></div>
+                    <div class="side-button secondary"></div>
+                    <div class="device-screen">
+                        <div class="safe-area">
+                            <iframe id="preview" title="Mobile preview"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const devices = [
+            {
+                id: "iphone-16e",
+                name: "iPhone 16e",
+                width: 390,
+                height: 844,
+                radius: 44,
+                notchWidth: 160,
+                notchHeight: 32,
+                notchRadius: 22,
+                safeTop: 50,
+                safeBottom: 34,
+                safeSide: 18
+            },
+            {
+                id: "iphone-17",
+                name: "iPhone 17",
+                width: 393,
+                height: 852,
+                radius: 44,
+                notchWidth: 168,
+                notchHeight: 34,
+                notchRadius: 22,
+                safeTop: 54,
+                safeBottom: 34,
+                safeSide: 18
+            },
+            {
+                id: "iphone-17-pro-max",
+                name: "iPhone 17 Pro Max",
+                width: 430,
+                height: 932,
+                radius: 50,
+                notchWidth: 182,
+                notchHeight: 36,
+                notchRadius: 24,
+                safeTop: 58,
+                safeBottom: 34,
+                safeSide: 18
+            },
+            {
+                id: "pixel-9-pro",
+                name: "Pixel 9 Pro",
+                width: 412,
+                height: 915,
+                radius: 46,
+                notchWidth: 88,
+                notchHeight: 26,
+                notchRadius: 18,
+                safeTop: 36,
+                safeBottom: 24,
+                safeSide: 12
+            },
+            {
+                id: "galaxy-s24",
+                name: "Galaxy S24",
+                width: 412,
+                height: 915,
+                radius: 48,
+                notchWidth: 70,
+                notchHeight: 22,
+                notchRadius: 16,
+                safeTop: 28,
+                safeBottom: 24,
+                safeSide: 12
+            },
+            {
+                id: "ipad-mini",
+                name: "iPad mini",
+                width: 744,
+                height: 1133,
+                radius: 32,
+                notchWidth: 0,
+                notchHeight: 0,
+                notchRadius: 0,
+                safeTop: 24,
+                safeBottom: 20,
+                safeSide: 20
+            }
+        ];
+
+        const deviceSelect = document.getElementById("deviceSelect");
+        const scaleRange = document.getElementById("scaleRange");
+        const viewportInfo = document.getElementById("viewportInfo");
+        const device = document.getElementById("device");
+        const deviceWrap = document.getElementById("deviceWrap");
+        const urlInput = document.getElementById("urlInput");
+        const preview = document.getElementById("preview");
+        const loadBtn = document.getElementById("loadBtn");
+        const openBtn = document.getElementById("openBtn");
+        const toggleButtons = Array.from(document.querySelectorAll(".toggle-btn"));
+
+        let orientation = "portrait";
+
+        function normalizeUrl(value) {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                return "";
+            }
+            if (/^https?:\/\//i.test(trimmed)) {
+                return trimmed;
+            }
+            return `https://${trimmed}`;
+        }
+
+        function applyDevice(deviceConfig) {
+            const isLandscape = orientation === "landscape";
+            const width = isLandscape ? deviceConfig.height : deviceConfig.width;
+            const height = isLandscape ? deviceConfig.width : deviceConfig.height;
+
+            const safeTop = isLandscape ? deviceConfig.safeSide : deviceConfig.safeTop;
+            const safeBottom = isLandscape ? deviceConfig.safeSide : deviceConfig.safeBottom;
+            const safeLeft = isLandscape ? deviceConfig.safeTop : deviceConfig.safeSide;
+            const safeRight = isLandscape ? deviceConfig.safeBottom : deviceConfig.safeSide;
+
+            device.style.setProperty("--device-w", width);
+            device.style.setProperty("--device-h", height);
+            device.style.setProperty("--device-radius", deviceConfig.radius);
+            device.style.setProperty("--notch-w", deviceConfig.notchWidth);
+            device.style.setProperty("--notch-h", deviceConfig.notchHeight);
+            device.style.setProperty("--notch-radius", deviceConfig.notchRadius);
+            device.style.setProperty("--safe-top", safeTop);
+            device.style.setProperty("--safe-bottom", safeBottom);
+            device.style.setProperty("--safe-left", safeLeft);
+            device.style.setProperty("--safe-right", safeRight);
+
+            viewportInfo.textContent = `${width} × ${height} CSS px`;
+
+            const notch = document.getElementById("notch");
+            notch.style.display = deviceConfig.notchWidth ? "block" : "none";
+        }
+
+        function loadUrl() {
+            const normalized = normalizeUrl(urlInput.value);
+            if (!normalized) {
+                return;
+            }
+            urlInput.value = normalized;
+            preview.src = normalized;
+        }
+
+        function populateDevices() {
+            devices.forEach((deviceConfig) => {
+                const option = document.createElement("option");
+                option.value = deviceConfig.id;
+                option.textContent = deviceConfig.name;
+                deviceSelect.appendChild(option);
+            });
+        }
+
+        function getSelectedDevice() {
+            return devices.find((deviceConfig) => deviceConfig.id === deviceSelect.value) || devices[0];
+        }
+
+        populateDevices();
+        deviceSelect.value = devices[0].id;
+        applyDevice(devices[0]);
+        loadUrl();
+
+        deviceSelect.addEventListener("change", () => {
+            applyDevice(getSelectedDevice());
+        });
+
+        scaleRange.addEventListener("input", (event) => {
+            deviceWrap.style.setProperty("--device-scale", event.target.value);
+        });
+
+        toggleButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                toggleButtons.forEach((btn) => btn.classList.remove("is-active"));
+                button.classList.add("is-active");
+                orientation = button.dataset.orientation;
+                applyDevice(getSelectedDevice());
+            });
+        });
+
+        loadBtn.addEventListener("click", loadUrl);
+        openBtn.addEventListener("click", () => {
+            const normalized = normalizeUrl(urlInput.value);
+            if (normalized) {
+                window.open(normalized, "_blank", "noopener");
+            }
+        });
+
+        urlInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                loadUrl();
+            }
+        });
+    </script>
+</body>
+</html>
