@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0e0d0b;
+            --surface: #171511;
+            --ink: #f0ebe2;
+            --muted: #a39a8f;
+            --accent: #f0b37a;
+            --border: rgba(240, 235, 226, 0.12);
+            --shadow: 0 22px 50px rgba(5, 4, 3, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Spline Sans", sans-serif;
+            color: var(--ink);
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
+
+        .app {
+            width: min(560px, 100%);
+            min-height: min(720px, 96vh);
+            background: var(--surface);
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: rise 0.6s ease both;
+        }
+
+        .app-bar {
+            padding: 28px 24px 18px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0));
+            display: grid;
+            gap: 8px;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: "Spectral", serif;
+            font-weight: 600;
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        .content {
+            flex: 1;
+            padding: 22px 24px 26px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .upload {
+            display: grid;
+            gap: 12px;
+        }
+
+        .upload-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(240, 235, 226, 0.18);
+            background: #1f1c17;
+            color: var(--ink);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 10px 18px rgba(5, 4, 3, 0.4);
+        }
+
+        .upload-btn input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 22px rgba(30, 28, 24, 0.12);
+        }
+
+        .hint {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .preview {
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: #1a1712;
+            padding: 14px;
+            display: grid;
+            place-items: center;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+        }
+
+        .result {
+            display: grid;
+            gap: 10px;
+        }
+
+        .is-hidden {
+            display: none !important;
+        }
+
+        .result-box {
+            border-radius: 16px;
+            border: 1px solid rgba(240, 235, 226, 0.16);
+            padding: 16px;
+            min-height: 88px;
+            background: #0f0d0a;
+            color: #f6efe6;
+            font-family: "Spline Sans", sans-serif;
+            word-break: break-word;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(240, 235, 226, 0.2);
+            background: #211d17;
+            color: var(--ink);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 10px 18px rgba(5, 4, 3, 0.4);
+            width: 100%;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 22px rgba(30, 28, 24, 0.12);
+        }
+
+        .status {
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+
+        .flash {
+            box-shadow: 0 0 0 1px rgba(240, 179, 122, 0.6), 0 0 20px rgba(240, 179, 122, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            text-align: left;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0;
+            }
+
+            .app {
+                min-height: 100vh;
+                border-radius: 0;
+            }
+
+            .app-bar {
+                padding: 22px 20px 16px;
+            }
+
+            .content {
+                padding: 18px 20px 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="app-bar">
+            <h1>QR Reader</h1>
+            <p>Upload a QR image. Local decode with jsQR.</p>
+        </header>
+
+        <main class="content">
+            <div class="upload">
+                <label class="upload-btn">
+                    <input id="fileInput" type="file" accept="image/*" />
+                    Select image
+                </label>
+            </div>
+
+            <div class="preview is-hidden" id="previewWrap">
+                <canvas id="previewCanvas" aria-label="Image preview"></canvas>
+            </div>
+
+            <div class="result is-hidden" id="resultBlock">
+                <div class="result-box" id="result">No image yet.</div>
+                <button class="copy-btn" id="copyBtn" hidden>Copy</button>
+                <div class="status" id="status"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <canvas id="workCanvas" hidden></canvas>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const previewWrap = document.getElementById("previewWrap");
+        const previewCanvas = document.getElementById("previewCanvas");
+        const resultBlock = document.getElementById("resultBlock");
+        const resultEl = document.getElementById("result");
+        const statusEl = document.getElementById("status");
+        const copyBtn = document.getElementById("copyBtn");
+        const workCanvas = document.getElementById("workCanvas");
+        const previewCtx = previewCanvas.getContext("2d");
+        const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
+
+        const MAX_PREVIEW = 560;
+        const MAX_DECODE = 1600;
+        let lastResult = "";
+
+        function setStatus(message) {
+            statusEl.textContent = message;
+        }
+
+        function setResult(message) {
+            resultEl.textContent = message;
+            lastResult = "";
+            copyBtn.hidden = true;
+        }
+
+        function setDecodedResult(message) {
+            resultEl.textContent = message;
+            lastResult = message;
+            copyBtn.hidden = false;
+        }
+
+        function drawPreview(image) {
+            const scale = Math.min(1, MAX_PREVIEW / Math.max(image.width, image.height));
+            const width = Math.round(image.width * scale);
+            const height = Math.round(image.height * scale);
+            previewCanvas.width = width;
+            previewCanvas.height = height;
+            previewCtx.clearRect(0, 0, width, height);
+            previewCtx.drawImage(image, 0, 0, width, height);
+            previewWrap.classList.remove("is-hidden");
+            resultBlock.classList.remove("is-hidden");
+        }
+
+        function decodeImage(image) {
+            if (typeof jsQR !== "function") {
+                setStatus("Decoder unavailable");
+                return "";
+            }
+            const scale = Math.min(1, MAX_DECODE / Math.max(image.width, image.height));
+            const width = Math.max(1, Math.round(image.width * scale));
+            const height = Math.max(1, Math.round(image.height * scale));
+            workCanvas.width = width;
+            workCanvas.height = height;
+            workCtx.clearRect(0, 0, width, height);
+            workCtx.drawImage(image, 0, 0, width, height);
+            const imageData = workCtx.getImageData(0, 0, width, height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth",
+            });
+            return code?.data || "";
+        }
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const image = new Image();
+                image.onload = () => {
+                    setStatus("");
+                    drawPreview(image);
+                    setResult("Decoding...");
+                    resultEl.classList.remove("flash");
+                    const decoded = decodeImage(image);
+                    if (decoded) {
+                        setDecodedResult(decoded);
+                        setStatus("QR code detected");
+                    } else {
+                        setResult("No QR code found in this image.");
+                        setStatus("");
+                    }
+                };
+                image.onerror = () => {
+                    setResult("Unable to load this image.");
+                    setStatus("");
+                };
+                image.src = reader.result;
+            };
+            reader.onerror = () => {
+                setResult("Unable to read this file.");
+                setStatus("");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            resultBlock.classList.remove("is-hidden");
+            previewWrap.classList.add("is-hidden");
+            resultEl.classList.remove("flash");
+            if (!file.type.startsWith("image/")) {
+                setResult("Please select an image file.");
+                setStatus("");
+                return;
+            }
+            setResult("Loading image...");
+            setStatus("");
+            loadImage(file);
+        });
+
+        copyBtn.addEventListener("click", async () => {
+            if (!lastResult) return;
+            try {
+                await navigator.clipboard.writeText(lastResult);
+                setStatus("Copied to clipboard");
+                resultEl.classList.remove("flash");
+                void resultEl.offsetWidth;
+                resultEl.classList.add("flash");
+                setTimeout(() => setStatus(""), 1200);
+            } catch (error) {
+                setStatus("Copy failed");
+            }
+        });
+    </script>
+</body>
+</html>
