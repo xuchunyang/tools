@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cURL 试验台 · Web 版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0e1117;
+            --bg-strong: #121a23;
+            --panel: #151e28;
+            --panel-soft: #1a2531;
+            --ink: #e6eef8;
+            --ink-muted: #9fb0c3;
+            --accent: #56ffe5;
+            --accent-2: #ffb347;
+            --accent-3: #b084ff;
+            --danger: #ff6b6b;
+            --success: #35d37a;
+            --stroke: rgba(230, 238, 248, 0.12);
+            --shadow: 0 30px 80px rgba(5, 8, 12, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", "Noto Sans SC", sans-serif;
+            background: radial-gradient(circle at top left, rgba(86, 255, 229, 0.12), transparent 50%),
+                radial-gradient(circle at 10% 80%, rgba(176, 132, 255, 0.15), transparent 55%),
+                radial-gradient(circle at 90% 10%, rgba(255, 179, 71, 0.15), transparent 50%),
+                var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop offset='0%25' stop-color='white' stop-opacity='0.08'/%3E%3Cstop offset='100%25' stop-color='white' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0h120v120H0z' fill='none'/%3E%3Cpath d='M0 24h120M0 60h120M0 96h120M24 0v120M60 0v120M96 0v120' stroke='url(%23g)' stroke-width='1'/%3E%3C/svg%3E");
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: "Cormorant Garamond", serif;
+            margin: 0;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            width: min(1200px, 94vw);
+            margin: 28px auto 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-radius: 999px;
+            background: rgba(21, 30, 40, 0.88);
+            border: 1px solid var(--stroke);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-family: "IBM Plex Mono", monospace;
+            font-weight: 500;
+            color: #0b0f14;
+            background: linear-gradient(135deg, #56ffe5, #b084ff);
+            box-shadow: 0 10px 20px rgba(86, 255, 229, 0.28);
+        }
+
+        .topbar span {
+            color: var(--ink-muted);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+            gap: 24px;
+        }
+
+        .hero-card {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card h1 {
+            font-size: clamp(2.3rem, 4vw, 3.2rem);
+            margin-bottom: 12px;
+        }
+
+        .hero-card p {
+            margin: 0 0 16px;
+            color: var(--ink-muted);
+            line-height: 1.6;
+        }
+
+        .hero-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pill {
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(86, 255, 229, 0.12);
+            border: 1px solid rgba(86, 255, 229, 0.2);
+            color: var(--accent);
+            font-size: 0.85rem;
+        }
+
+        .side-card {
+            background: linear-gradient(160deg, rgba(26, 37, 49, 0.9), rgba(16, 26, 35, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: 22px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .side-card h3 {
+            font-size: 1.4rem;
+        }
+
+        .cta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-weight: 600;
+            background: none;
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, rgba(86, 255, 229, 0.9), rgba(176, 132, 255, 0.9));
+            color: #0b0f14;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(86, 255, 229, 0.22);
+        }
+
+        .btn-ghost {
+            border-color: var(--stroke);
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--ink);
+        }
+
+        .btn-ghost:hover {
+            border-color: rgba(86, 255, 229, 0.4);
+            color: var(--accent);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 20px;
+            padding: 20px;
+            display: grid;
+            gap: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel h2 {
+            font-size: 1.6rem;
+        }
+
+        .subtle {
+            color: var(--ink-muted);
+            font-size: 0.95rem;
+        }
+
+        .section {
+            display: grid;
+            gap: 10px;
+        }
+
+        .row {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--ink-muted);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--panel-soft);
+            border: 1px solid var(--stroke);
+            border-radius: 12px;
+            color: var(--ink);
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: rgba(86, 255, 229, 0.6);
+            box-shadow: 0 0 0 3px rgba(86, 255, 229, 0.12);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: "IBM Plex Mono", monospace;
+        }
+
+        .field-inline {
+            display: flex;
+            gap: 10px;
+        }
+
+        .field-inline > * {
+            flex: 1;
+        }
+
+        .mini-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .chip.active {
+            border-color: rgba(86, 255, 229, 0.5);
+            background: rgba(86, 255, 229, 0.12);
+            color: var(--accent);
+        }
+
+        .list-editor {
+            display: grid;
+            gap: 8px;
+        }
+
+        .list-row {
+            display: grid;
+            grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.5fr) minmax(0, 0.1fr);
+            gap: 8px;
+            align-items: center;
+        }
+
+        .list-row button {
+            border: none;
+            background: none;
+            color: var(--ink-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .list-row button:hover {
+            color: var(--danger);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            background: transparent;
+            color: var(--ink-muted);
+            cursor: pointer;
+        }
+
+        .tab.active {
+            border-color: rgba(86, 255, 229, 0.5);
+            color: var(--accent);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            font-size: 0.85rem;
+        }
+
+        .status-ok {
+            border-color: rgba(53, 211, 122, 0.6);
+            color: var(--success);
+        }
+
+        .status-bad {
+            border-color: rgba(255, 107, 107, 0.6);
+            color: var(--danger);
+        }
+
+        .response-box {
+            background: #0b0f14;
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 14px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.85rem;
+            color: #cfe4ff;
+            white-space: pre-wrap;
+            max-height: 360px;
+            overflow: auto;
+        }
+
+        .response-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .meta-card {
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--stroke);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .meta-card span {
+            color: var(--ink-muted);
+            font-size: 0.75rem;
+        }
+
+        .curl-output {
+            background: #070b10;
+            border: 1px dashed rgba(86, 255, 229, 0.4);
+            border-radius: 16px;
+            padding: 16px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            color: #9ff7e4;
+        }
+
+        .preview {
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            background: #0b0f14;
+            overflow: hidden;
+            min-height: 140px;
+            display: grid;
+            place-items: center;
+            color: var(--ink-muted);
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: 240px;
+        }
+
+        .preview iframe {
+            width: 100%;
+            min-height: 240px;
+            border: none;
+            background: #fff;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--ink-muted);
+            font-size: 0.85rem;
+            margin-top: 24px;
+        }
+
+        @media (max-width: 980px) {
+            .hero,
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-badge">cURL</div>
+                <div>
+                    <strong>cURL 试验台</strong>
+                    <div class="subtle">浏览器里练功，保持好奇与耐心。</div>
+                </div>
+            </div>
+            <span>Web-friendly + Fun + Useful</span>
+        </div>
+
+        <section class="hero">
+            <div class="hero-card">
+                <h1>把 cURL 的手感装进浏览器</h1>
+                <p>这个试验台模拟最核心的 cURL 功能：方法、头、鉴权、正文、重定向、超时、缓存与响应解析。它还会生成等价 curl 命令，方便复制回 CLI。</p>
+                <div class="hero-pills">
+                    <span class="pill">实时生成 curl</span>
+                    <span class="pill">JSON / 表单 / 原始正文</span>
+                    <span class="pill">本地历史记录</span>
+                    <span class="pill">响应预览</span>
+                </div>
+            </div>
+            <div class="side-card">
+                <div>
+                    <h3>玩点有用的</h3>
+                    <p class="subtle">浏览器有 CORS 限制，但你可以用它快速验证接口、整理头部、生成命令、和团队同步。</p>
+                </div>
+                <div class="cta">
+                    <button class="btn btn-primary" id="runBtn">发送请求</button>
+                    <button class="btn btn-ghost" id="clearBtn">清空输出</button>
+                    <button class="btn btn-ghost" id="savePresetBtn">保存配方</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="layout">
+            <section class="panel" id="requestPanel">
+                <h2>请求配置</h2>
+
+                <div class="section row">
+                    <div>
+                        <label>方法</label>
+                        <select id="method">
+                            <option>GET</option>
+                            <option>POST</option>
+                            <option>PUT</option>
+                            <option>PATCH</option>
+                            <option>DELETE</option>
+                            <option>HEAD</option>
+                            <option>OPTIONS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>URL</label>
+                        <input id="url" placeholder="https://api.example.com/resource" />
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>快速配方</label>
+                    <div class="chip-grid" id="recipeChips">
+                        <button class="chip" data-recipe="httpbin">httpbin /anything</button>
+                        <button class="chip" data-recipe="ipify">ipify /ip</button>
+                        <button class="chip" data-recipe="json">JSON Echo</button>
+                        <button class="chip" data-recipe="html">HTML 预览</button>
+                    </div>
+                    <p class="subtle">有些公共 API 可能需要 CORS 代理；失败时会给出提示。</p>
+                </div>
+
+                <div class="section">
+                    <label>查询参数</label>
+                    <div class="list-editor" id="paramsList"></div>
+                    <button class="btn btn-ghost" id="addParamBtn">新增参数</button>
+                </div>
+
+                <div class="section">
+                    <label>请求头</label>
+                    <div class="list-editor" id="headersList"></div>
+                    <button class="btn btn-ghost" id="addHeaderBtn">新增 Header</button>
+                </div>
+
+                <div class="section">
+                    <label>鉴权方式</label>
+                    <div class="chip-grid" id="authTabs">
+                        <button class="chip active" data-auth="none">无</button>
+                        <button class="chip" data-auth="bearer">Bearer</button>
+                        <button class="chip" data-auth="basic">Basic</button>
+                        <button class="chip" data-auth="api">API Key</button>
+                    </div>
+                    <div id="authFields"></div>
+                </div>
+
+                <div class="section">
+                    <label>正文类型</label>
+                    <div class="tabs" id="bodyTabs">
+                        <button class="tab active" data-body="none">无</button>
+                        <button class="tab" data-body="raw">Raw</button>
+                        <button class="tab" data-body="json">JSON</button>
+                        <button class="tab" data-body="form">表单</button>
+                    </div>
+                    <div id="bodyFields"></div>
+                </div>
+
+                <div class="section">
+                    <label>选项</label>
+                    <div class="row">
+                        <div>
+                            <label>重定向</label>
+                            <select id="redirect">
+                                <option value="follow">follow</option>
+                                <option value="manual">manual</option>
+                                <option value="error">error</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>超时 (ms)</label>
+                            <input id="timeout" type="number" min="0" value="15000" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>模式</label>
+                            <select id="mode">
+                                <option value="cors">cors</option>
+                                <option value="no-cors">no-cors</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>凭据</label>
+                            <select id="credentials">
+                                <option value="omit">omit</option>
+                                <option value="same-origin">same-origin</option>
+                                <option value="include">include</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>缓存策略</label>
+                            <select id="cache">
+                                <option value="default">default</option>
+                                <option value="no-store">no-store</option>
+                                <option value="reload">reload</option>
+                                <option value="no-cache">no-cache</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>备注标签</label>
+                            <input id="tag" placeholder="比如: 登录、调试、探针" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>生成的 curl 命令</label>
+                    <div class="curl-output" id="curlPreview">curl \
+  -X GET \
+  "https://example.com"</div>
+                    <div class="mini-actions">
+                        <button class="btn btn-ghost" id="copyCurlBtn">复制 curl</button>
+                        <button class="btn btn-ghost" id="copyFetchBtn">复制 fetch</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>历史记录</label>
+                    <div class="chip-grid" id="historyChips"></div>
+                </div>
+            </section>
+
+            <section class="panel" id="responsePanel">
+                <h2>响应工作台</h2>
+                <p class="subtle">输出会尝试识别 JSON / HTML / 图片。若处于 `no-cors`，浏览器会返回 opaque 响应。</p>
+
+                <div class="section">
+                    <div class="response-meta" id="responseMeta">
+                        <div class="meta-card">
+                            <strong>状态</strong>
+                            <div class="subtle">等待请求</div>
+                        </div>
+                        <div class="meta-card">
+                            <strong>耗时</strong>
+                            <div class="subtle">--</div>
+                        </div>
+                        <div class="meta-card">
+                            <strong>大小</strong>
+                            <div class="subtle">--</div>
+                        </div>
+                        <div class="meta-card">
+                            <strong>类型</strong>
+                            <div class="subtle">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <label>响应预览</label>
+                    <div class="preview" id="responsePreview">等待请求响应</div>
+                </div>
+
+                <div class="section">
+                    <label>响应头</label>
+                    <div class="response-box" id="responseHeaders">--</div>
+                </div>
+
+                <div class="section">
+                    <label>响应正文</label>
+                    <div class="tabs" id="responseTabs">
+                        <button class="tab active" data-response="pretty">Pretty</button>
+                        <button class="tab" data-response="raw">Raw</button>
+                    </div>
+                    <div class="response-box" id="responseBody">--</div>
+                </div>
+
+                <div class="mini-actions">
+                    <button class="btn btn-ghost" id="copyBodyBtn">复制正文</button>
+                    <button class="btn btn-ghost" id="downloadBtn">下载响应</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="footer">cURL 试验台：浏览器友好版。支持核心流程，CORS 不是 bug，是边界。</div>
+    </div>
+
+    <script>
+        const state = {
+            method: "GET",
+            url: "https://httpbin.org/anything",
+            params: [],
+            headers: [],
+            auth: { type: "none", token: "", user: "", pass: "", apiKey: "", apiKeyTarget: "header", apiKeyName: "X-API-Key" },
+            bodyType: "none",
+            bodyRaw: "",
+            bodyJson: "{\n  \"hello\": \"world\"\n}",
+            bodyForm: [],
+            redirect: "follow",
+            timeout: 15000,
+            mode: "cors",
+            credentials: "omit",
+            cache: "default",
+            tag: ""
+        };
+
+        const $ = (sel, root = document) => root.querySelector(sel);
+        const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+        const paramsList = $("#paramsList");
+        const headersList = $("#headersList");
+        const bodyFields = $("#bodyFields");
+        const authFields = $("#authFields");
+        const responseBody = $("#responseBody");
+        const responseHeaders = $("#responseHeaders");
+        const responsePreview = $("#responsePreview");
+        const responseMeta = $("#responseMeta");
+        const curlPreview = $("#curlPreview");
+
+        const historyKey = "curlWebHistory";
+        let history = [];
+        let latestResponse = { raw: "", pretty: "", headers: "", blob: null, contentType: "" };
+
+        const recipes = {
+            httpbin: {
+                method: "GET",
+                url: "https://httpbin.org/anything",
+                bodyType: "none",
+                headers: [{ key: "Accept", value: "application/json" }],
+                params: [{ key: "source", value: "curl-web" }]
+            },
+            ipify: {
+                method: "GET",
+                url: "https://api.ipify.org?format=json",
+                bodyType: "none",
+                headers: [{ key: "Accept", value: "application/json" }],
+                params: []
+            },
+            json: {
+                method: "POST",
+                url: "https://httpbin.org/post",
+                bodyType: "json",
+                bodyJson: "{\n  \"name\": \"curl-lab\",\n  \"mood\": \"curious\"\n}",
+                headers: [{ key: "Content-Type", value: "application/json" }],
+                params: []
+            },
+            html: {
+                method: "GET",
+                url: "https://example.com",
+                bodyType: "none",
+                headers: [{ key: "Accept", value: "text/html" }],
+                params: []
+            }
+        };
+
+        function init() {
+            $("#method").value = state.method;
+            $("#url").value = state.url;
+            $("#redirect").value = state.redirect;
+            $("#timeout").value = state.timeout;
+            $("#mode").value = state.mode;
+            $("#credentials").value = state.credentials;
+            $("#cache").value = state.cache;
+            $("#tag").value = state.tag;
+
+            renderList(paramsList, state.params, "param");
+            renderList(headersList, state.headers, "header");
+            renderAuthFields();
+            renderBodyFields();
+            loadHistory();
+            updateCurl();
+            wireEvents();
+        }
+
+        function wireEvents() {
+            $("#method").addEventListener("change", (event) => {
+                state.method = event.target.value;
+                updateCurl();
+            });
+            $("#url").addEventListener("input", (event) => {
+                state.url = event.target.value;
+                syncParamsFromUrl();
+                updateCurl();
+            });
+            $("#redirect").addEventListener("change", (event) => {
+                state.redirect = event.target.value;
+                updateCurl();
+            });
+            $("#timeout").addEventListener("input", (event) => {
+                state.timeout = Number(event.target.value || 0);
+            });
+            $("#mode").addEventListener("change", (event) => {
+                state.mode = event.target.value;
+            });
+            $("#credentials").addEventListener("change", (event) => {
+                state.credentials = event.target.value;
+            });
+            $("#cache").addEventListener("change", (event) => {
+                state.cache = event.target.value;
+            });
+            $("#tag").addEventListener("input", (event) => {
+                state.tag = event.target.value;
+            });
+
+            $("#addParamBtn").addEventListener("click", () => {
+                state.params.push({ key: "", value: "" });
+                renderList(paramsList, state.params, "param");
+            });
+            $("#addHeaderBtn").addEventListener("click", () => {
+                state.headers.push({ key: "", value: "" });
+                renderList(headersList, state.headers, "header");
+                updateCurl();
+            });
+
+            $("#bodyTabs").addEventListener("click", (event) => {
+                if (!event.target.dataset.body) return;
+                state.bodyType = event.target.dataset.body;
+                $$("#bodyTabs .tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.body === state.bodyType));
+                renderBodyFields();
+                updateCurl();
+            });
+
+            $("#authTabs").addEventListener("click", (event) => {
+                if (!event.target.dataset.auth) return;
+                state.auth.type = event.target.dataset.auth;
+                $$("#authTabs .chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.auth === state.auth.type));
+                renderAuthFields();
+                updateCurl();
+            });
+
+            $("#responseTabs").addEventListener("click", (event) => {
+                if (!event.target.dataset.response) return;
+                $$("#responseTabs .tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.response === event.target.dataset.response));
+                renderResponseBody();
+            });
+
+            $("#recipeChips").addEventListener("click", (event) => {
+                const recipe = event.target.dataset.recipe;
+                if (!recipe || !recipes[recipe]) return;
+                applyRecipe(recipes[recipe]);
+            });
+
+            $("#runBtn").addEventListener("click", runRequest);
+            $("#clearBtn").addEventListener("click", clearResponse);
+            $("#copyCurlBtn").addEventListener("click", () => copyText(curlPreview.textContent));
+            $("#copyFetchBtn").addEventListener("click", copyFetchSnippet);
+            $("#copyBodyBtn").addEventListener("click", () => copyText(responseBody.textContent));
+            $("#downloadBtn").addEventListener("click", downloadResponse);
+            $("#savePresetBtn").addEventListener("click", saveHistoryItem);
+        }
+
+        function renderList(container, list, type) {
+            container.innerHTML = "";
+            if (!list.length) {
+                const hint = document.createElement("div");
+                hint.className = "subtle";
+                hint.textContent = "暂无项，点一下新增。";
+                container.appendChild(hint);
+            }
+
+            list.forEach((item, index) => {
+                const row = document.createElement("div");
+                row.className = "list-row";
+                row.innerHTML = `
+                    <input placeholder="${type === "param" ? "key" : "Header"}" value="${item.key || ""}" />
+                    <input placeholder="value" value="${item.value || ""}" />
+                    <button title="删除">×</button>
+                `;
+                const inputs = row.querySelectorAll("input");
+                inputs[0].addEventListener("input", (event) => {
+                    item.key = event.target.value;
+                    if (type === "param") updateUrlFromParams();
+                    updateCurl();
+                });
+                inputs[1].addEventListener("input", (event) => {
+                    item.value = event.target.value;
+                    if (type === "param") updateUrlFromParams();
+                    updateCurl();
+                });
+                row.querySelector("button").addEventListener("click", () => {
+                    list.splice(index, 1);
+                    renderList(container, list, type);
+                    if (type === "param") updateUrlFromParams();
+                    updateCurl();
+                });
+                container.appendChild(row);
+            });
+        }
+
+        function renderAuthFields() {
+            authFields.innerHTML = "";
+            if (state.auth.type === "bearer") {
+                authFields.innerHTML = `
+                    <div class="field-inline">
+                        <input id="authToken" placeholder="Bearer Token" value="${state.auth.token || ""}" />
+                    </div>
+                `;
+                $("#authToken").addEventListener("input", (event) => {
+                    state.auth.token = event.target.value;
+                    updateCurl();
+                });
+                return;
+            }
+            if (state.auth.type === "basic") {
+                authFields.innerHTML = `
+                    <div class="field-inline">
+                        <input id="authUser" placeholder="用户名" value="${state.auth.user || ""}" />
+                        <input id="authPass" placeholder="密码" type="password" value="${state.auth.pass || ""}" />
+                    </div>
+                `;
+                $("#authUser").addEventListener("input", (event) => {
+                    state.auth.user = event.target.value;
+                    updateCurl();
+                });
+                $("#authPass").addEventListener("input", (event) => {
+                    state.auth.pass = event.target.value;
+                    updateCurl();
+                });
+                return;
+            }
+            if (state.auth.type === "api") {
+                authFields.innerHTML = `
+                    <div class="row">
+                        <div>
+                            <label>Key 名称</label>
+                            <input id="apiKeyName" placeholder="X-API-Key" value="${state.auth.apiKeyName || ""}" />
+                        </div>
+                        <div>
+                            <label>Key 值</label>
+                            <input id="apiKeyValue" placeholder="your-key" value="${state.auth.apiKey || ""}" />
+                        </div>
+                    </div>
+                    <div class="chip-grid">
+                        <button class="chip ${state.auth.apiKeyTarget === "header" ? "active" : ""}" data-target="header">放在 Header</button>
+                        <button class="chip ${state.auth.apiKeyTarget === "query" ? "active" : ""}" data-target="query">放在 Query</button>
+                    </div>
+                `;
+                $("#apiKeyName").addEventListener("input", (event) => {
+                    state.auth.apiKeyName = event.target.value;
+                    updateCurl();
+                });
+                $("#apiKeyValue").addEventListener("input", (event) => {
+                    state.auth.apiKey = event.target.value;
+                    updateCurl();
+                });
+                authFields.querySelectorAll(".chip").forEach((chip) => {
+                    chip.addEventListener("click", () => {
+                        state.auth.apiKeyTarget = chip.dataset.target;
+                        renderAuthFields();
+                        updateCurl();
+                    });
+                });
+            }
+        }
+
+        function renderBodyFields() {
+            bodyFields.innerHTML = "";
+            if (state.bodyType === "raw") {
+                bodyFields.innerHTML = `
+                    <textarea id="bodyRaw" placeholder="raw body">${state.bodyRaw || ""}</textarea>
+                `;
+                $("#bodyRaw").addEventListener("input", (event) => {
+                    state.bodyRaw = event.target.value;
+                    updateCurl();
+                });
+                return;
+            }
+            if (state.bodyType === "json") {
+                bodyFields.innerHTML = `
+                    <textarea id="bodyJson" placeholder="{ }">${state.bodyJson || ""}</textarea>
+                    <div class="mini-actions">
+                        <button class="btn btn-ghost" id="beautifyJsonBtn">美化 JSON</button>
+                        <button class="btn btn-ghost" id="sampleJsonBtn">插入示例</button>
+                    </div>
+                `;
+                $("#bodyJson").addEventListener("input", (event) => {
+                    state.bodyJson = event.target.value;
+                    updateCurl();
+                });
+                $("#beautifyJsonBtn").addEventListener("click", () => {
+                    try {
+                        const parsed = JSON.parse(state.bodyJson || "{}");
+                        state.bodyJson = JSON.stringify(parsed, null, 2);
+                        renderBodyFields();
+                        updateCurl();
+                    } catch (error) {
+                        alert("JSON 解析失败，请检查格式。");
+                    }
+                });
+                $("#sampleJsonBtn").addEventListener("click", () => {
+                    state.bodyJson = "{\n  \"name\": \"curl-web\",\n  \"time\": \"" + new Date().toISOString() + "\"\n}";
+                    renderBodyFields();
+                    updateCurl();
+                });
+                return;
+            }
+            if (state.bodyType === "form") {
+                if (!state.bodyForm.length) {
+                    state.bodyForm.push({ key: "", value: "" });
+                }
+                const container = document.createElement("div");
+                container.className = "list-editor";
+                state.bodyForm.forEach((item, index) => {
+                    const row = document.createElement("div");
+                    row.className = "list-row";
+                    row.innerHTML = `
+                        <input placeholder="field" value="${item.key || ""}" />
+                        <input placeholder="value" value="${item.value || ""}" />
+                        <button title="删除">×</button>
+                    `;
+                    const inputs = row.querySelectorAll("input");
+                    inputs[0].addEventListener("input", (event) => {
+                        item.key = event.target.value;
+                        updateCurl();
+                    });
+                    inputs[1].addEventListener("input", (event) => {
+                        item.value = event.target.value;
+                        updateCurl();
+                    });
+                    row.querySelector("button").addEventListener("click", () => {
+                        state.bodyForm.splice(index, 1);
+                        renderBodyFields();
+                        updateCurl();
+                    });
+                    container.appendChild(row);
+                });
+                const addBtn = document.createElement("button");
+                addBtn.className = "btn btn-ghost";
+                addBtn.textContent = "新增字段";
+                addBtn.addEventListener("click", () => {
+                    state.bodyForm.push({ key: "", value: "" });
+                    renderBodyFields();
+                });
+                bodyFields.appendChild(container);
+                bodyFields.appendChild(addBtn);
+            }
+        }
+
+        function syncParamsFromUrl() {
+            if (!state.url || !state.url.includes("?")) return;
+            try {
+                const url = new URL(state.url);
+                state.params = Array.from(url.searchParams.entries()).map(([key, value]) => ({ key, value }));
+                renderList(paramsList, state.params, "param");
+            } catch (error) {
+                // ignore invalid URL
+            }
+        }
+
+        function updateUrlFromParams() {
+            try {
+                const url = new URL(state.url);
+                url.search = "";
+                state.params.forEach((item) => {
+                    if (!item.key) return;
+                    url.searchParams.append(item.key, item.value || "");
+                });
+                state.url = url.toString();
+                $("#url").value = state.url;
+            } catch (error) {
+                // ignore invalid URL
+            }
+        }
+
+        function buildHeaders() {
+            const headers = {};
+            state.headers.forEach((item) => {
+                if (item.key) headers[item.key] = item.value || "";
+            });
+            if (state.bodyType === "json") {
+                headers["Content-Type"] = headers["Content-Type"] || "application/json";
+            }
+            if (state.bodyType === "form") {
+                headers["Content-Type"] = headers["Content-Type"] || "application/x-www-form-urlencoded";
+            }
+            if (state.auth.type === "bearer" && state.auth.token) {
+                headers["Authorization"] = `Bearer ${state.auth.token}`;
+            }
+            if (state.auth.type === "basic" && state.auth.user) {
+                const encoded = btoa(`${state.auth.user}:${state.auth.pass || ""}`);
+                headers["Authorization"] = `Basic ${encoded}`;
+            }
+            if (state.auth.type === "api" && state.auth.apiKey && state.auth.apiKeyTarget === "header") {
+                headers[state.auth.apiKeyName || "X-API-Key"] = state.auth.apiKey;
+            }
+            return headers;
+        }
+
+        function buildUrlWithAuth() {
+            let url = state.url;
+            if (state.auth.type === "api" && state.auth.apiKey && state.auth.apiKeyTarget === "query") {
+                try {
+                    const urlObj = new URL(url);
+                    urlObj.searchParams.set(state.auth.apiKeyName || "api_key", state.auth.apiKey);
+                    url = urlObj.toString();
+                } catch (error) {
+                    // ignore
+                }
+            }
+            return url;
+        }
+
+        function buildBody() {
+            if (["GET", "HEAD"].includes(state.method)) return undefined;
+            if (state.bodyType === "raw") return state.bodyRaw || "";
+            if (state.bodyType === "json") return state.bodyJson || "{}";
+            if (state.bodyType === "form") {
+                const params = new URLSearchParams();
+                state.bodyForm.forEach((item) => {
+                    if (item.key) params.append(item.key, item.value || "");
+                });
+                return params.toString();
+            }
+            return undefined;
+        }
+
+        function updateCurl() {
+            const headers = buildHeaders();
+            const url = buildUrlWithAuth();
+            const parts = ["curl", "\\", `  -X ${state.method}`, "\\", `  \"${url || "https://example.com"}\"`];
+            Object.entries(headers).forEach(([key, value]) => {
+                parts.push("\\", `  -H \"${key}: ${value}\"`);
+            });
+            const body = buildBody();
+            if (body !== undefined && body !== "") {
+                const safe = body.replace(/\n/g, "\\n").replace(/\"/g, "\\\"");
+                parts.push("\\", `  --data-raw \"${safe}\"`);
+            }
+            curlPreview.textContent = parts.join("\n");
+        }
+
+        function buildFetchSnippet() {
+            const headers = buildHeaders();
+            const body = buildBody();
+            const payload = {
+                method: state.method,
+                headers,
+                redirect: state.redirect,
+                mode: state.mode,
+                credentials: state.credentials,
+                cache: state.cache
+            };
+            if (body !== undefined) payload.body = body;
+            return `fetch(\"${buildUrlWithAuth()}\", ${JSON.stringify(payload, null, 2)})\n  .then(res => res.text())\n  .then(console.log);`;
+        }
+
+        function copyFetchSnippet() {
+            copyText(buildFetchSnippet());
+        }
+
+        async function runRequest() {
+            clearResponse();
+            const url = buildUrlWithAuth();
+            if (!url) {
+                alert("请先填写 URL");
+                return;
+            }
+            const headers = buildHeaders();
+            const controller = new AbortController();
+            const timeout = state.timeout > 0 ? setTimeout(() => controller.abort(), state.timeout) : null;
+            const start = performance.now();
+            let res;
+            try {
+                res = await fetch(url, {
+                    method: state.method,
+                    headers,
+                    body: buildBody(),
+                    redirect: state.redirect,
+                    mode: state.mode,
+                    credentials: state.credentials,
+                    cache: state.cache,
+                    signal: controller.signal
+                });
+                if (timeout) clearTimeout(timeout);
+                const elapsed = Math.round(performance.now() - start);
+                await handleResponse(res, elapsed);
+                saveHistoryItem();
+            } catch (error) {
+                if (timeout) clearTimeout(timeout);
+                renderError(error);
+            }
+        }
+
+        async function handleResponse(res, elapsed) {
+            const statusClass = res.ok ? "status-ok" : "status-bad";
+            let size = "--";
+            let text = "";
+            let pretty = "";
+            let contentType = res.headers.get("content-type") || "";
+            let headersText = "";
+
+            if (res.type === "opaque") {
+                headersText = "opaque 响应，浏览器无法读取 headers/body。";
+                responsePreview.textContent = "opaque 响应，无法预览";
+            } else {
+                headersText = Array.from(res.headers.entries()).map(([k, v]) => `${k}: ${v}`).join("\n");
+            }
+
+            if (res.type !== "opaque") {
+                const cloned = res.clone();
+                const buffer = await cloned.arrayBuffer();
+                size = formatBytes(buffer.byteLength);
+                const blob = new Blob([buffer]);
+                latestResponse.blob = blob;
+                if (contentType.includes("image/")) {
+                    const url = URL.createObjectURL(blob);
+                    responsePreview.innerHTML = `<img src="${url}" alt="image" />`;
+                } else if (contentType.includes("text/html")) {
+                    const htmlText = await res.text();
+                    text = htmlText;
+                    responsePreview.innerHTML = "<iframe sandbox=\"\"></iframe>";
+                    const frame = responsePreview.querySelector("iframe");
+                    if (frame) frame.srcdoc = htmlText;
+                } else {
+                    text = await res.text();
+                    responsePreview.textContent = contentType ? `预览: ${contentType}` : "没有可视化预览";
+                }
+
+                if (contentType.includes("application/json")) {
+                    try {
+                        pretty = JSON.stringify(JSON.parse(text), null, 2);
+                    } catch (error) {
+                        pretty = text;
+                    }
+                } else {
+                    pretty = text;
+                }
+            }
+
+            latestResponse = {
+                raw: text,
+                pretty,
+                headers: headersText,
+                blob: latestResponse.blob,
+                contentType
+            };
+
+            responseHeaders.textContent = headersText || "--";
+            renderResponseBody();
+            renderResponseMeta(res, elapsed, size, contentType, statusClass);
+        }
+
+        function renderResponseMeta(res, elapsed, size, contentType, statusClass) {
+            responseMeta.innerHTML = `
+                <div class="meta-card">
+                    <strong>状态</strong>
+                    <div class="status-pill ${statusClass}">${res.status} ${res.statusText || ""}</div>
+                </div>
+                <div class="meta-card">
+                    <strong>耗时</strong>
+                    <div class="subtle">${elapsed} ms</div>
+                </div>
+                <div class="meta-card">
+                    <strong>大小</strong>
+                    <div class="subtle">${size}</div>
+                </div>
+                <div class="meta-card">
+                    <strong>类型</strong>
+                    <div class="subtle">${contentType || res.type}</div>
+                </div>
+            `;
+        }
+
+        function renderResponseBody() {
+            const active = $("#responseTabs .tab.active").dataset.response;
+            responseBody.textContent = active === "raw" ? latestResponse.raw || "--" : latestResponse.pretty || "--";
+        }
+
+        function renderError(error) {
+            responseMeta.innerHTML = `
+                <div class="meta-card">
+                    <strong>状态</strong>
+                    <div class="status-pill status-bad">失败</div>
+                </div>
+                <div class="meta-card">
+                    <strong>错误</strong>
+                    <div class="subtle">${error.message || error}</div>
+                </div>
+                <div class="meta-card">
+                    <strong>提示</strong>
+                    <div class="subtle">检查 CORS、URL 与网络连接</div>
+                </div>
+                <div class="meta-card">
+                    <strong>时间</strong>
+                    <div class="subtle">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            responseHeaders.textContent = "--";
+            responseBody.textContent = "--";
+            responsePreview.textContent = "请求失败";
+        }
+
+        function clearResponse() {
+            latestResponse = { raw: "", pretty: "", headers: "", blob: null, contentType: "" };
+            responseHeaders.textContent = "--";
+            responseBody.textContent = "--";
+            responsePreview.textContent = "等待请求响应";
+            responseMeta.innerHTML = `
+                <div class="meta-card">
+                    <strong>状态</strong>
+                    <div class="subtle">等待请求</div>
+                </div>
+                <div class="meta-card">
+                    <strong>耗时</strong>
+                    <div class="subtle">--</div>
+                </div>
+                <div class="meta-card">
+                    <strong>大小</strong>
+                    <div class="subtle">--</div>
+                </div>
+                <div class="meta-card">
+                    <strong>类型</strong>
+                    <div class="subtle">--</div>
+                </div>
+            `;
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text || "").then(() => {
+                alert("已复制到剪贴板");
+            });
+        }
+
+        function downloadResponse() {
+            if (!latestResponse.blob) {
+                alert("没有可下载的响应内容");
+                return;
+            }
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(latestResponse.blob);
+            link.download = "response" + guessExtension(latestResponse.contentType);
+            link.click();
+        }
+
+        function guessExtension(contentType) {
+            if (!contentType) return ".txt";
+            if (contentType.includes("application/json")) return ".json";
+            if (contentType.includes("text/html")) return ".html";
+            if (contentType.includes("text/plain")) return ".txt";
+            if (contentType.includes("image/png")) return ".png";
+            if (contentType.includes("image/jpeg")) return ".jpg";
+            return ".txt";
+        }
+
+        function saveHistoryItem() {
+            const item = {
+                id: Date.now(),
+                method: state.method,
+                url: state.url,
+                tag: state.tag || "未命名",
+                headers: state.headers,
+                params: state.params,
+                auth: state.auth,
+                bodyType: state.bodyType,
+                bodyRaw: state.bodyRaw,
+                bodyJson: state.bodyJson,
+                bodyForm: state.bodyForm
+            };
+            history = history.filter((entry) => entry.url !== item.url || entry.method !== item.method);
+            history.unshift(item);
+            history = history.slice(0, 12);
+            localStorage.setItem(historyKey, JSON.stringify(history));
+            renderHistory();
+        }
+
+        function loadHistory() {
+            try {
+                history = JSON.parse(localStorage.getItem(historyKey)) || [];
+            } catch (error) {
+                history = [];
+            }
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = $("#historyChips");
+            container.innerHTML = "";
+            if (!history.length) {
+                const hint = document.createElement("div");
+                hint.className = "subtle";
+                hint.textContent = "暂时没有历史记录。";
+                container.appendChild(hint);
+                return;
+            }
+            history.forEach((item) => {
+                const chip = document.createElement("button");
+                chip.className = "chip";
+                chip.textContent = `${item.method} · ${item.tag}`;
+                chip.addEventListener("click", () => applyHistory(item));
+                container.appendChild(chip);
+            });
+        }
+
+        function applyHistory(item) {
+            state.method = item.method;
+            state.url = item.url;
+            state.tag = item.tag;
+            state.headers = item.headers || [];
+            state.params = item.params || [];
+            state.auth = item.auth || state.auth;
+            state.bodyType = item.bodyType || "none";
+            state.bodyRaw = item.bodyRaw || "";
+            state.bodyJson = item.bodyJson || "";
+            state.bodyForm = item.bodyForm || [];
+            $("#method").value = state.method;
+            $("#url").value = state.url;
+            $("#tag").value = state.tag;
+            renderList(paramsList, state.params, "param");
+            renderList(headersList, state.headers, "header");
+            $$("#authTabs .chip").forEach((chip) => chip.classList.toggle("active", chip.dataset.auth === state.auth.type));
+            renderAuthFields();
+            $$("#bodyTabs .tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.body === state.bodyType));
+            renderBodyFields();
+            updateCurl();
+        }
+
+        function applyRecipe(recipe) {
+            state.method = recipe.method;
+            state.url = recipe.url;
+            state.params = recipe.params || [];
+            state.headers = recipe.headers || [];
+            state.bodyType = recipe.bodyType || "none";
+            state.bodyJson = recipe.bodyJson || state.bodyJson;
+            $("#method").value = state.method;
+            $("#url").value = state.url;
+            renderList(paramsList, state.params, "param");
+            renderList(headersList, state.headers, "header");
+            $$("#bodyTabs .tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.body === state.bodyType));
+            renderBodyFields();
+            updateCurl();
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return "--";
+            const units = ["B", "KB", "MB", "GB"];
+            let idx = 0;
+            let value = bytes;
+            while (value >= 1024 && idx < units.length - 1) {
+                value /= 1024;
+                idx += 1;
+            }
+            return `${value.toFixed(1)} ${units[idx]}`;
+        }
+
+        init();
+    </script>
+</body>
+</html>
