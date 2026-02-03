@@ -4,84 +4,478 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML 小工具集</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f2ee;
+            --bg-strong: #efe7df;
+            --ink: #1c1815;
+            --ink-muted: #5a4f47;
+            --accent: #c2451c;
+            --accent-soft: #f2c2a8;
+            --card: #fffaf5;
+            --stroke: rgba(28, 24, 21, 0.12);
+            --shadow: 0 20px 60px rgba(28, 24, 21, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(45% 40% at 15% 15%, rgba(194, 69, 28, 0.18), transparent 60%),
+                radial-gradient(40% 40% at 85% 10%, rgba(52, 95, 134, 0.14), transparent 60%),
+                radial-gradient(35% 35% at 80% 85%, rgba(228, 188, 132, 0.2), transparent 60%);
+            z-index: -2;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.35;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            width: min(1100px, 92vw);
+            margin: 40px auto 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border: 1px solid var(--stroke);
+            border-radius: 999px;
+            background: rgba(255, 250, 245, 0.8);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 30px rgba(28, 24, 21, 0.08);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #c2451c, #f2b192);
+            color: #fffaf5;
+            font-weight: 700;
+            font-family: "Fraunces", serif;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            font-size: 0.9rem;
+            color: var(--ink-muted);
+        }
+
+        .nav-links a {
+            padding: 6px 12px;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a:focus-visible {
+            background: var(--accent-soft);
+            color: var(--ink);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+            gap: 32px;
+            align-items: center;
+        }
+
+        .hero-card {
+            background: var(--card);
+            border: 1px solid var(--stroke);
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            right: -80px;
+            top: -80px;
+            background: radial-gradient(circle, rgba(194, 69, 28, 0.22), transparent 70%);
+        }
+
+        h1 {
+            font-family: "Fraunces", serif;
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            margin: 0 0 16px;
+            letter-spacing: 0.01em;
+        }
+
+        .hero p {
+            margin: 0 0 20px;
+            color: var(--ink-muted);
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: #fffaf5;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(28, 24, 21, 0.2);
+        }
+
+        .btn-secondary {
+            border-color: var(--stroke);
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.65);
+        }
+
+        .btn-secondary:hover,
+        .btn-secondary:focus-visible {
+            background: var(--accent-soft);
+        }
+
+        .hero-aside {
+            display: grid;
+            gap: 16px;
+        }
+
+        .stat {
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid var(--stroke);
+            background: rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat strong {
+            font-size: 1.4rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-family: "Fraunces", serif;
+            font-size: 1.6rem;
+        }
+
+        .section-header span {
+            color: var(--ink-muted);
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .tool-card {
+            border: 1px solid var(--stroke);
+            background: var(--card);
+            border-radius: 22px;
+            padding: 20px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .tool-card:hover,
+        .tool-card:focus-within {
+            transform: translateY(-4px);
+            border-color: rgba(194, 69, 28, 0.4);
+            box-shadow: 0 16px 30px rgba(28, 24, 21, 0.14);
+        }
+
+        .tool-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-title span {
+            display: inline-flex;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--accent);
+        }
+
+        .tool-desc {
+            color: var(--ink-muted);
+            line-height: 1.5;
+        }
+
+        .tool-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .tool-link::after {
+            content: "→";
+            transition: transform 0.2s ease;
+        }
+
+        .tool-card:hover .tool-link::after,
+        .tool-card:focus-within .tool-link::after {
+            transform: translateX(4px);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 24px 0 40px;
+            border-top: 1px solid var(--stroke);
+            background: rgba(255, 250, 245, 0.7);
+            backdrop-filter: blur(6px);
+        }
+
+        .footer-inner {
+            width: min(1100px, 92vw);
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            align-items: center;
+            color: var(--ink-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-inner a {
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .footer-inner span {
+            color: var(--ink-muted);
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero-card {
+                padding: 24px;
+            }
+
+            .tool-card {
+                min-height: 160px;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <div class="flex-grow p-6 max-w-3xl">
-        <header class="mb-8">
-            <h1 class="text-2xl font-bold mb-3 text-gray-900">
-                HTML 小工具集
-            </h1>
-            <p class="text-sm text-gray-600 leading-relaxed">
-                一个自用的单页面 Web 工具集合，灵感来源于 <a href="https://simonwillison.net/2025/Dec/10/html-tools/" class="text-blue-600 hover:text-blue-800 underline" target="_blank">Simon Willison's HTML Tools</a>。
-                每个工具都是独立的 HTML 文件，完全在浏览器端运行，无后端依赖，并主要通过 AI 辅助构建。
-            </p>
+<body>
+    <div class="page">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-badge">H</span>
+                <span>HTML 小工具集</span>
+            </div>
+            <nav class="nav-links">
+                <a href="/">首页</a>
+                <a href="https://github.com/xuchunyang/tools/blob/main/README.md" target="_blank" rel="noreferrer">关于工具</a>
+                <a href="https://github.com/xuchunyang/tools/blob/main/index.html" target="_blank" rel="noreferrer">查看源码</a>
+            </nav>
         </header>
 
-        <section class="mb-8">
-            <h2 class="text-lg font-semibold mb-4 text-gray-900">工具列表</h2>
-            <ul class="list-disc list-inside space-y-3 text-gray-700">
-                <li class="pl-2">
-                    <a href="html-preview.html" class="text-blue-600 hover:text-blue-800 underline font-medium">HTML Preview</a>
-                    <span class="text-gray-600 ml-2">
-                        一个预览 HTML 的工具
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="html-simplifier.html" class="text-blue-600 hover:text-blue-800 underline font-medium">HTML Simplifier</a>
-                    <span class="text-gray-600 ml-2">
-                        简化 HTML，删除无用信息，减少 Token 消耗
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="code-prettier.html" class="text-blue-600 hover:text-blue-800 underline font-medium">Code Prettier</a>
-                    <span class="text-gray-600 ml-2">
-                        代码格式化工具 (支持 JSON, JS, CSS 等)
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="cwebp.html" class="text-blue-600 hover:text-blue-800 underline font-medium">Image to WebP</a>
-                    <span class="text-gray-600 ml-2">
-                        图片转 WebP 工具 (支持 JPG/PNG)
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="markdown-preview.html" class="text-blue-600 hover:text-blue-800 underline font-medium">Markdown Preview</a>
-                    <span class="text-gray-600 ml-2">
-                        Markdown 实时预览工具
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="viewport-size.html" class="text-blue-600 hover:text-blue-800 underline font-medium">Viewport Size</a>
-                    <span class="text-gray-600 ml-2">
-                        查看设备 Viewport 尺寸和屏幕信息
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="mobile-viewer.html" class="text-blue-600 hover:text-blue-800 underline font-medium">Mobile Viewer</a>
-                    <span class="text-gray-600 ml-2">
-                        选择常见手机设备并预览指定 URL
-                    </span>
-                </li>
-                <li class="pl-2">
-                    <a href="qr-reader.html" class="text-blue-600 hover:text-blue-800 underline font-medium">QR Reader</a>
-                    <span class="text-gray-600 ml-2">
-                        QR 码扫描工具 (支持摄像头与图片上传)
-                    </span>
-                </li>
-            </ul>
+        <section class="hero">
+            <div class="hero-card">
+                <h1>轻量、独立、专注于效率的 HTML 工具合集</h1>
+                <p>
+                    一个自用的单页面 Web 工具集合，灵感来源于
+                    <a href="https://simonwillison.net/2025/Dec/10/html-tools/" target="_blank" rel="noreferrer" class="tool-link">Simon Willison's HTML Tools</a>。
+                    每个工具都是独立的 HTML 文件，完全在浏览器端运行，无后端依赖，并主要通过 AI 辅助构建。
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="#tools">查看全部工具</a>
+                    <a class="btn btn-secondary" href="markdown-preview.html">快速打开 Markdown Preview</a>
+                </div>
+            </div>
+            <div class="hero-aside">
+                <div class="stat">
+                    <strong>完全离线友好</strong>
+                    <span>下载即用，零依赖，开箱即跑。</span>
+                </div>
+                <div class="stat">
+                    <strong>浏览器原生体验</strong>
+                    <span>无需登录或安装，一切在本地完成。</span>
+                </div>
+                <div class="stat">
+                    <strong>持续更新</strong>
+                    <span>按需求补齐，保持精简。</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools">
+            <div class="section-header">
+                <h2>工具列表</h2>
+                <span>挑选一个，立即开始。</span>
+            </div>
+            <div class="tools-grid">
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>HTML Preview</div>
+                        <p class="tool-desc">一个预览 HTML 的工具</p>
+                    </div>
+                    <a class="tool-link" href="html-preview.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>HTML Simplifier</div>
+                        <p class="tool-desc">简化 HTML，删除无用信息，减少 Token 消耗</p>
+                    </div>
+                    <a class="tool-link" href="html-simplifier.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>Code Prettier</div>
+                        <p class="tool-desc">代码格式化工具 (支持 JSON, JS, CSS 等)</p>
+                    </div>
+                    <a class="tool-link" href="code-prettier.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>Image to WebP</div>
+                        <p class="tool-desc">图片转 WebP 工具 (支持 JPG/PNG)</p>
+                    </div>
+                    <a class="tool-link" href="cwebp.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>Markdown Preview</div>
+                        <p class="tool-desc">Markdown 实时预览工具</p>
+                    </div>
+                    <a class="tool-link" href="markdown-preview.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>Viewport Size</div>
+                        <p class="tool-desc">查看设备 Viewport 尺寸和屏幕信息</p>
+                    </div>
+                    <a class="tool-link" href="viewport-size.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>Mobile Viewer</div>
+                        <p class="tool-desc">选择常见手机设备并预览指定 URL</p>
+                    </div>
+                    <a class="tool-link" href="mobile-viewer.html">打开工具</a>
+                </article>
+                <article class="tool-card">
+                    <div>
+                        <div class="tool-title"><span></span>QR Reader</div>
+                        <p class="tool-desc">QR 码扫描工具 (支持摄像头与图片上传)</p>
+                    </div>
+                    <a class="tool-link" href="qr-reader.html">打开工具</a>
+                </article>
+            </div>
         </section>
     </div>
 
-    <!-- 统一的 Footer -->
-    <footer class="mt-auto bg-white border-t border-gray-200 py-4 px-6">
-        <nav class="text-xs text-gray-600 space-x-4">
-            <a href="/" class="hover:text-blue-600 underline">首页</a>
-            <a href="https://github.com/xuchunyang/tools/blob/main/README.md" class="hover:text-blue-600 underline" target="_blank">关于工具</a>
-            <a href="https://github.com/xuchunyang/tools/blob/main/index.html" class="hover:text-blue-600 underline" target="_blank">查看源码</a>
-            <span class="text-gray-400">更新于 2025-12-24</span>
-        </nav>
+    <footer>
+        <div class="footer-inner">
+            <span>更新于 2025-12-24</span>
+            <a href="/">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/README.md" target="_blank" rel="noreferrer">关于工具</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/index.html" target="_blank" rel="noreferrer">查看源码</a>
+        </div>
     </footer>
-
 </body>
 </html>
