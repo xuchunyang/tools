@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片压缩（WebP + 缩放）</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #f3eee6;
+            --paper-ink: #1d1916;
+            --paper-muted: #6a5f55;
+            --accent: #c04b2b;
+            --accent-soft: #f0c1ad;
+            --panel: rgba(255, 250, 242, 0.9);
+            --stroke: rgba(29, 25, 22, 0.14);
+            --shadow: 0 18px 50px rgba(29, 25, 22, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+            background: var(--paper);
+            color: var(--paper-ink);
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(40% 40% at 20% 15%, rgba(192, 75, 43, 0.15), transparent 60%),
+                radial-gradient(35% 35% at 85% 20%, rgba(63, 80, 92, 0.16), transparent 65%),
+                radial-gradient(45% 45% at 75% 85%, rgba(225, 186, 132, 0.25), transparent 70%);
+            z-index: -2;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .page {
+            width: min(1100px, 92vw);
+            margin: 36px auto 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            background: rgba(255, 250, 242, 0.7);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(29, 25, 22, 0.12);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .brand .badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #c04b2b, #f2bfa0);
+            color: #fff5eb;
+            font-family: "Cormorant Garamond", serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .back-link {
+            font-size: 0.9rem;
+            color: var(--paper-muted);
+            padding: 6px 12px;
+            border-radius: 999px;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover,
+        .back-link:focus-visible {
+            background: var(--accent-soft);
+            color: var(--paper-ink);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .hero-card,
+        .control-card {
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            inset: -60px;
+            background: radial-gradient(circle, rgba(192, 75, 43, 0.18), transparent 65%);
+            opacity: 0.6;
+            z-index: 0;
+        }
+
+        .hero-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: "Cormorant Garamond", serif;
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            margin: 0 0 12px;
+            letter-spacing: 0.02em;
+        }
+
+        .lead {
+            margin: 0;
+            color: var(--paper-muted);
+            line-height: 1.6;
+        }
+
+        .drop-zone {
+            margin-top: 18px;
+            border: 2px dashed rgba(29, 25, 22, 0.2);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .drop-zone::before,
+        .drop-zone::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 80px;
+            top: 24px;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(29, 25, 22, 0.25),
+                rgba(29, 25, 22, 0.25) 6px,
+                transparent 6px,
+                transparent 12px
+            );
+        }
+
+        .drop-zone::before {
+            left: 14px;
+        }
+
+        .drop-zone::after {
+            right: 14px;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(240, 193, 173, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .drop-zone h3 {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+        }
+
+        .drop-zone p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--paper-muted);
+        }
+
+        .control-card h2 {
+            margin: 0 0 18px;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--paper-muted);
+        }
+
+        .field {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            font-size: 0.9rem;
+            color: var(--paper-muted);
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .field input[type="number"],
+        .field input[type="range"] {
+            width: 100%;
+        }
+
+        input[type="number"] {
+            border: 1px solid var(--stroke);
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 1rem;
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent);
+        }
+
+        .value-pill {
+            min-width: 56px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(192, 75, 43, 0.12);
+            color: var(--paper-ink);
+            font-family: "IBM Plex Sans", sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .note {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--paper-muted);
+        }
+
+        .results {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .clear-btn {
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--accent);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .result-card {
+            display: grid;
+            grid-template-columns: 120px 1fr auto;
+            gap: 20px;
+            align-items: center;
+            background: var(--panel);
+            border: 1px solid var(--stroke);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 14px 35px rgba(29, 25, 22, 0.12);
+            animation: fadeUp 0.3s ease;
+        }
+
+        .preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--stroke);
+            background: #fff;
+        }
+
+        .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .result-meta h3 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+        }
+
+        .sizes {
+            display: flex;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--paper-muted);
+        }
+
+        .savings {
+            display: inline-flex;
+            margin-top: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(32, 132, 86, 0.16);
+            color: #1f6b4a;
+        }
+
+        .savings.negative {
+            background: rgba(180, 62, 50, 0.16);
+            color: #9f2d25;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            border: 1px solid transparent;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--paper-ink);
+            color: #fff5eb;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(29, 25, 22, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: var(--stroke);
+            color: var(--paper-ink);
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.8rem;
+            color: var(--paper-muted);
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .result-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .preview {
+                margin: 0 auto;
+            }
+
+            .actions {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div class="brand">
+                <div class="badge">W</div>
+                <span>Image Compressor</span>
+            </div>
+            <a class="back-link" href="/">← 返回首页</a>
+        </header>
+
+        <section class="hero">
+            <div class="hero-card">
+                <h1>图片压缩（WebP + 缩放）</h1>
+                <p class="lead">先缩小尺寸，再转成 WebP。对视觉几乎无损，却大幅缩减体积。</p>
+
+                <div id="drop-zone" class="drop-zone">
+                    <input id="file-input" type="file" class="hidden" accept="image/jpeg, image/png" multiple>
+                    <h3>拖拽图片到这里</h3>
+                    <p>支持 JPG / PNG，多张一起拖入。</p>
+                </div>
+            </div>
+
+            <div class="control-card">
+                <h2>冲洗参数</h2>
+                <div class="field">
+                    <label for="max-size">最长边（px）</label>
+                    <div class="field-row">
+                        <input id="max-size" type="number" min="320" max="8000" value="1920">
+                        <span class="value-pill" id="max-size-pill">1920</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="quality">WebP 质量</label>
+                    <div class="field-row">
+                        <input id="quality" type="range" min="0" max="100" value="80">
+                        <span class="value-pill" id="quality-pill">80</span>
+                    </div>
+                </div>
+                <p class="note">最长边大于设定值才会缩放；输出统一为 WebP。</p>
+            </div>
+        </section>
+
+        <section class="results" id="results">
+            <div class="results-header">
+                <h2>压缩结果</h2>
+                <button class="clear-btn" id="clear-all" type="button">清空列表</button>
+            </div>
+            <div id="results-list"></div>
+        </section>
+
+        <footer>
+            <span>更新于 2026-02-04</span>
+            <a href="/">首页</a>
+            <a href="https://github.com/xuchunyang/tools/blob/main/image-compress.html" target="_blank" rel="noreferrer">查看源码</a>
+        </footer>
+    </div>
+
+    <template id="result-template">
+        <div class="result-card">
+            <div class="preview">
+                <img alt="Preview" src="">
+            </div>
+            <div class="result-meta">
+                <h3 class="name">filename.jpg</h3>
+                <div class="sizes">
+                    <span>原始 <strong class="original">0 KB</strong></span>
+                    <span>→</span>
+                    <span>WebP <strong class="compressed">0 KB</strong></span>
+                </div>
+                <div class="savings">节省 0%</div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary copy-btn" type="button">复制链接</button>
+                <a class="btn btn-secondary download" href="#" download>另存为</a>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        const els = {
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            maxSizeInput: document.getElementById('max-size'),
+            maxSizePill: document.getElementById('max-size-pill'),
+            qualityInput: document.getElementById('quality'),
+            qualityPill: document.getElementById('quality-pill'),
+            results: document.getElementById('results'),
+            resultsList: document.getElementById('results-list'),
+            template: document.getElementById('result-template'),
+            clearAll: document.getElementById('clear-all')
+        };
+
+        const activeUrls = new Set();
+
+        els.dropZone.addEventListener('click', () => els.fileInput.click());
+        els.dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            els.dropZone.classList.add('dragover');
+        });
+        els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('dragover'));
+        els.dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            els.dropZone.classList.remove('dragover');
+            handleFiles(event.dataTransfer.files);
+        });
+        els.fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
+
+        els.maxSizeInput.addEventListener('input', (event) => {
+            const value = clampNumber(event.target.value, 320, 8000);
+            els.maxSizeInput.value = value;
+            els.maxSizePill.textContent = value;
+        });
+
+        els.qualityInput.addEventListener('input', (event) => {
+            els.qualityPill.textContent = event.target.value;
+        });
+
+        els.clearAll.addEventListener('click', () => {
+            activeUrls.forEach((url) => URL.revokeObjectURL(url));
+            activeUrls.clear();
+            els.resultsList.innerHTML = '';
+            els.results.style.display = 'none';
+            els.fileInput.value = '';
+        });
+
+        function clampNumber(value, min, max) {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed)) return min;
+            return Math.min(Math.max(parsed, min), max);
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            const index = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
+        }
+
+        async function handleFiles(files) {
+            if (!files.length) return;
+            els.results.style.display = 'flex';
+
+            const maxSize = clampNumber(els.maxSizeInput.value, 320, 8000);
+            const quality = Number(els.qualityInput.value) / 100;
+
+            for (const file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                await compressImage(file, maxSize, quality);
+            }
+        }
+
+        function compressImage(file, maxSize, quality) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const { width, height } = resizeDimensions(img.width, img.height, maxSize);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                resolve();
+                                return;
+                            }
+                            addResult(file, blob, width, height);
+                            resolve();
+                        }, 'image/webp', quality);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function resizeDimensions(width, height, maxSize) {
+            const longestSide = Math.max(width, height);
+            if (longestSide <= maxSize) {
+                return { width, height };
+            }
+            const scale = maxSize / longestSide;
+            return {
+                width: Math.round(width * scale),
+                height: Math.round(height * scale)
+            };
+        }
+
+        function addResult(originalFile, blob, width, height) {
+            const clone = els.template.content.cloneNode(true);
+            const nameEl = clone.querySelector('.name');
+            const originalEl = clone.querySelector('.original');
+            const compressedEl = clone.querySelector('.compressed');
+            const savingsEl = clone.querySelector('.savings');
+            const preview = clone.querySelector('img');
+            const copyBtn = clone.querySelector('.copy-btn');
+            const download = clone.querySelector('.download');
+
+            const outputName = `${originalFile.name.split('.').slice(0, -1).join('.') || originalFile.name}.webp`;
+            const url = URL.createObjectURL(blob);
+            activeUrls.add(url);
+
+            nameEl.textContent = `${outputName} (${width}×${height})`;
+            originalEl.textContent = formatSize(originalFile.size);
+            compressedEl.textContent = formatSize(blob.size);
+
+            const savings = ((originalFile.size - blob.size) / originalFile.size) * 100;
+            if (Number.isFinite(savings)) {
+                const rounded = Math.abs(savings).toFixed(1);
+                if (savings >= 0) {
+                    savingsEl.textContent = `节省 ${rounded}%`;
+                } else {
+                    savingsEl.textContent = `变大 ${rounded}%`;
+                    savingsEl.classList.add('negative');
+                }
+            }
+
+            preview.src = url;
+            preview.alt = outputName;
+            download.href = url;
+            download.download = outputName;
+
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    copyBtn.textContent = '已复制';
+                    setTimeout(() => {
+                        copyBtn.textContent = '复制链接';
+                    }, 1400);
+                } catch (err) {
+                    alert('复制失败，请手动复制链接。');
+                }
+            });
+
+            els.resultsList.prepend(clone);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR 工具台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Orbitron:wght@500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #080c12;
+            --bg-elev: #0f1722;
+            --panel: #111c2b;
+            --panel-strong: #162437;
+            --ink: #e6f1ff;
+            --muted: #8aa4bf;
+            --accent: #4cd7ff;
+            --accent-strong: #23a8ff;
+            --warning: #f6c453;
+            --border: rgba(76, 215, 255, 0.18);
+            --shadow: 0 22px 60px rgba(6, 15, 26, 0.75);
+            --grid: rgba(76, 215, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+            background: radial-gradient(110% 80% at 15% 10%, rgba(44, 89, 138, 0.25), transparent 60%),
+                radial-gradient(90% 70% at 85% 15%, rgba(35, 168, 255, 0.18), transparent 60%),
+                radial-gradient(80% 80% at 70% 85%, rgba(25, 74, 138, 0.22), transparent 60%),
+                var(--bg);
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: 32px;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(transparent 24px, var(--grid) 25px),
+                linear-gradient(90deg, transparent 24px, var(--grid) 25px);
+            background-size: 25px 25px;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .shell {
+            width: min(1200px, 96vw);
+            margin: 0 auto;
+            background: linear-gradient(160deg, rgba(16, 30, 48, 0.95), rgba(7, 12, 20, 0.95));
+            border-radius: 28px;
+            border: 1px solid rgba(76, 215, 255, 0.2);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 28px;
+            background: linear-gradient(90deg, rgba(16, 36, 58, 0.92), rgba(16, 28, 43, 0.92));
+            border-bottom: 1px solid rgba(76, 215, 255, 0.2);
+        }
+
+        .title {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-family: "Orbitron", sans-serif;
+            font-size: clamp(1.8rem, 3.4vw, 2.5rem);
+            letter-spacing: 0.04em;
+        }
+
+        .title span {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .status-chip {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.78rem;
+            color: var(--accent);
+            border: 1px solid rgba(76, 215, 255, 0.4);
+            padding: 6px 12px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 22px;
+            padding: 24px 26px 30px;
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(18, 30, 46, 0.95), rgba(10, 16, 26, 0.95));
+            border: 1px solid rgba(76, 215, 255, 0.18);
+            border-radius: 20px;
+            padding: 22px;
+            display: grid;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 40%, rgba(76, 215, 255, 0.08));
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .panel h2 {
+            margin: 0;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 1.05rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .panel p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .upload-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(76, 215, 255, 0.5);
+            background: rgba(9, 17, 29, 0.9);
+            color: var(--ink);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .upload-btn input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(76, 215, 255, 0.18);
+        }
+
+        .preview {
+            background: var(--panel-strong);
+            border: 1px solid rgba(76, 215, 255, 0.2);
+            border-radius: 16px;
+            padding: 12px;
+            display: grid;
+            place-items: center;
+            min-height: 220px;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+        }
+
+        .result-box {
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(5, 10, 18, 0.85);
+            border: 1px solid rgba(76, 215, 255, 0.16);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 90px;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .btn {
+            border: 1px solid rgba(76, 215, 255, 0.4);
+            border-radius: 12px;
+            padding: 10px 14px;
+            background: rgba(8, 14, 24, 0.9);
+            color: var(--ink);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 18px rgba(35, 168, 255, 0.2);
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: var(--accent);
+        }
+
+        .status.warning {
+            color: var(--warning);
+        }
+
+        .field-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 0.82rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        input,
+        select,
+        textarea {
+            border-radius: 12px;
+            border: 1px solid rgba(76, 215, 255, 0.2);
+            background: rgba(7, 12, 20, 0.9);
+            color: var(--ink);
+            padding: 10px 12px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .qr-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .qr-card {
+            background: rgba(9, 16, 26, 0.92);
+            border: 1px solid rgba(76, 215, 255, 0.2);
+            border-radius: 16px;
+            padding: 12px;
+            display: grid;
+            place-items: center;
+            min-height: 180px;
+        }
+
+        .qr-card svg,
+        .qr-card canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .panel,
+        .topbar {
+            animation: rise 0.6s ease both;
+        }
+
+        @media (max-width: 920px) {
+            body {
+                padding: 20px;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0;
+            }
+
+            .shell {
+                width: 100%;
+                border-radius: 0;
+            }
+
+            .topbar {
+                padding: 18px 20px;
+            }
+
+            .layout {
+                padding: 18px 20px 26px;
+            }
+
+            .field-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <div class="title">
+                <h1>QR 工具台</h1>
+                <span>读取图片二维码，生成 PNG / SVG 指令图。</span>
+            </div>
+            <div class="status-chip">QR LAB</div>
+        </header>
+
+        <main class="layout">
+            <section class="panel" aria-label="二维码读取">
+                <h2>读取 / 解码</h2>
+                <p>上传包含二维码的图片，离线解析并输出内容。</p>
+                <label class="upload-btn">
+                    <input id="fileInput" type="file" accept="image/*" />
+                    选择图片
+                </label>
+                <div class="preview">
+                    <canvas id="previewCanvas" aria-label="图片预览"></canvas>
+                </div>
+                <div class="result-box" id="decodeResult">尚未解析。</div>
+                <div class="button-row">
+                    <button class="btn" id="copyBtn" disabled>复制结果</button>
+                    <button class="btn" id="clearBtn">清空</button>
+                </div>
+                <div class="status" id="decodeStatus"></div>
+            </section>
+
+            <section class="panel" aria-label="二维码生成">
+                <h2>生成 / 导出</h2>
+                <p>输入内容并设置参数，实时生成二维码。</p>
+                <div class="field-group">
+                    <label>
+                        内容
+                        <textarea id="textInput" placeholder="输入文本 / URL / 任意内容"></textarea>
+                    </label>
+                    <div class="field-row">
+                        <label>
+                            尺寸 (px)
+                            <input id="sizeInput" type="number" min="120" max="1200" step="10" value="320" />
+                        </label>
+                        <label>
+                            边距
+                            <input id="marginInput" type="number" min="0" max="8" step="1" value="2" />
+                        </label>
+                    </div>
+                    <label>
+                        纠错级别
+                        <select id="levelInput">
+                            <option value="L">L - 低 (7%)</option>
+                            <option value="M" selected>M - 中 (15%)</option>
+                            <option value="Q">Q - 较高 (25%)</option>
+                            <option value="H">H - 高 (30%)</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="qr-preview">
+                    <div class="qr-card">
+                        <canvas id="qrCanvas" aria-label="PNG 预览"></canvas>
+                    </div>
+                    <div class="qr-card" id="svgWrap" aria-label="SVG 预览"></div>
+                </div>
+                <div class="button-row">
+                    <button class="btn" id="downloadPng">下载 PNG</button>
+                    <button class="btn" id="downloadSvg">下载 SVG</button>
+                </div>
+                <div class="status" id="genStatus"></div>
+            </section>
+        </main>
+    </div>
+
+    <canvas id="workCanvas" class="hidden"></canvas>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const previewCanvas = document.getElementById("previewCanvas");
+        const decodeResult = document.getElementById("decodeResult");
+        const decodeStatus = document.getElementById("decodeStatus");
+        const copyBtn = document.getElementById("copyBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const workCanvas = document.getElementById("workCanvas");
+        const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
+        const previewCtx = previewCanvas.getContext("2d");
+
+        const textInput = document.getElementById("textInput");
+        const sizeInput = document.getElementById("sizeInput");
+        const marginInput = document.getElementById("marginInput");
+        const levelInput = document.getElementById("levelInput");
+        const qrCanvas = document.getElementById("qrCanvas");
+        const svgWrap = document.getElementById("svgWrap");
+        const downloadPng = document.getElementById("downloadPng");
+        const downloadSvg = document.getElementById("downloadSvg");
+        const genStatus = document.getElementById("genStatus");
+
+        const MAX_PREVIEW = 520;
+        const MAX_DECODE = 1600;
+        let lastDecode = "";
+        let lastSvg = "";
+        let qrLibPromise = null;
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = src;
+                script.async = true;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error("load failed"));
+                document.head.appendChild(script);
+            });
+        }
+
+        function ensureQrLib() {
+            if (typeof QRCode !== "undefined") return Promise.resolve();
+            if (qrLibPromise) return qrLibPromise;
+            qrLibPromise = loadScript("https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js")
+                .then(() => {
+                    if (typeof QRCode === "undefined") {
+                        throw new Error("QRCode missing");
+                    }
+                })
+                .catch(() => loadScript("https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"))
+                .then(() => {
+                    if (typeof QRCode === "undefined") {
+                        throw new Error("QRCode missing");
+                    }
+                });
+            qrLibPromise = qrLibPromise.catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"))
+                .then(() => {
+                    if (typeof qrcode === "undefined") {
+                        throw new Error("qrcode-generator missing");
+                    }
+                });
+            return qrLibPromise;
+        }
+
+        function setDecodeStatus(message, isWarning = false) {
+            decodeStatus.textContent = message;
+            decodeStatus.classList.toggle("warning", isWarning);
+        }
+
+        function setDecodeResult(message, success = false) {
+            decodeResult.textContent = message;
+            lastDecode = success ? message : "";
+            copyBtn.disabled = !success;
+        }
+
+        function drawPreview(image) {
+            const scale = Math.min(1, MAX_PREVIEW / Math.max(image.width, image.height));
+            const width = Math.round(image.width * scale);
+            const height = Math.round(image.height * scale);
+            previewCanvas.width = width;
+            previewCanvas.height = height;
+            previewCtx.clearRect(0, 0, width, height);
+            previewCtx.drawImage(image, 0, 0, width, height);
+        }
+
+        function decodeImage(image) {
+            if (typeof jsQR !== "function") {
+                setDecodeStatus("解码器未加载", true);
+                return "";
+            }
+            const scale = Math.min(1, MAX_DECODE / Math.max(image.width, image.height));
+            const width = Math.max(1, Math.round(image.width * scale));
+            const height = Math.max(1, Math.round(image.height * scale));
+            workCanvas.width = width;
+            workCanvas.height = height;
+            workCtx.clearRect(0, 0, width, height);
+            workCtx.drawImage(image, 0, 0, width, height);
+            const imageData = workCtx.getImageData(0, 0, width, height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "attemptBoth",
+            });
+            return code?.data || "";
+        }
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const image = new Image();
+                image.onload = () => {
+                    setDecodeStatus("");
+                    drawPreview(image);
+                    setDecodeResult("解码中...");
+                    const decoded = decodeImage(image);
+                    if (decoded) {
+                        setDecodeResult(decoded, true);
+                        setDecodeStatus("识别完成");
+                    } else {
+                        setDecodeResult("未检测到二维码。");
+                        setDecodeStatus("请尝试更清晰的图片", true);
+                    }
+                };
+                image.onerror = () => {
+                    setDecodeResult("无法加载图片。", false);
+                    setDecodeStatus("文件可能损坏", true);
+                };
+                image.src = reader.result;
+            };
+            reader.onerror = () => {
+                setDecodeResult("无法读取文件。", false);
+                setDecodeStatus("请重试", true);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            if (!file.type.startsWith("image/")) {
+                setDecodeResult("请选择图片文件。", false);
+                setDecodeStatus("格式不支持", true);
+                return;
+            }
+            setDecodeStatus("载入图片...");
+            loadImage(file);
+        });
+
+        copyBtn.addEventListener("click", async () => {
+            if (!lastDecode) return;
+            try {
+                await navigator.clipboard.writeText(lastDecode);
+                setDecodeStatus("已复制到剪贴板");
+            } catch (error) {
+                setDecodeStatus("复制失败", true);
+            }
+        });
+
+        clearBtn.addEventListener("click", () => {
+            fileInput.value = "";
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            setDecodeResult("尚未解析。", false);
+            setDecodeStatus("");
+        });
+
+        function readSettings() {
+            const text = textInput.value.trim();
+            const size = Math.min(1200, Math.max(120, Number(sizeInput.value) || 320));
+            const margin = Math.min(8, Math.max(0, Number(marginInput.value) || 2));
+            return {
+                text,
+                size,
+                margin,
+                level: levelInput.value || "M",
+            };
+        }
+
+        function setGenStatus(message, isWarning = false) {
+            genStatus.textContent = message;
+            genStatus.classList.toggle("warning", isWarning);
+        }
+
+        async function generateQr() {
+            const { text, size, margin, level } = readSettings();
+            if (!text) {
+                qrCanvas.width = 0;
+                qrCanvas.height = 0;
+                svgWrap.innerHTML = "";
+                lastSvg = "";
+                setGenStatus("请输入内容");
+                return;
+            }
+            try {
+                await ensureQrLib();
+                if (typeof QRCode !== "undefined") {
+                    await QRCode.toCanvas(qrCanvas, text, {
+                        width: size,
+                        margin,
+                        errorCorrectionLevel: level,
+                        color: {
+                            dark: "#0b1220",
+                            light: "#e6f1ff",
+                        },
+                    });
+                    const svg = await QRCode.toString(text, {
+                        type: "svg",
+                        width: size,
+                        margin,
+                        errorCorrectionLevel: level,
+                        color: {
+                            dark: "#0b1220",
+                            light: "#e6f1ff",
+                        },
+                    });
+                    svgWrap.innerHTML = svg;
+                    lastSvg = svg;
+                } else if (typeof qrcode !== "undefined") {
+                    const qr = qrcode(0, level);
+                    qr.addData(text);
+                    qr.make();
+                    const count = qr.getModuleCount();
+                    const cellSize = Math.max(1, Math.floor(size / (count + margin * 2)));
+                    const svg = qr.createSvgTag({
+                        scalable: true,
+                        cellSize,
+                        margin,
+                    });
+                    svgWrap.innerHTML = svg;
+                    lastSvg = svg;
+
+                    const img = new Image();
+                    img.onload = () => {
+                        qrCanvas.width = size;
+                        qrCanvas.height = size;
+                        const ctx = qrCanvas.getContext("2d");
+                        ctx.clearRect(0, 0, size, size);
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(img, 0, 0, size, size);
+                    };
+                    img.src = qr.createDataURL(cellSize, margin);
+                } else {
+                    throw new Error("No generator");
+                }
+                setGenStatus("生成完成");
+            } catch (error) {
+                setGenStatus("生成失败：生成库未加载", true);
+            }
+        }
+
+        function downloadBlob(data, filename, type) {
+            const blob = new Blob([data], { type });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        downloadPng.addEventListener("click", () => {
+            const { text } = readSettings();
+            if (!text) {
+                setGenStatus("请先输入内容", true);
+                return;
+            }
+            const dataUrl = qrCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = "qr-code.png";
+            link.click();
+        });
+
+        downloadSvg.addEventListener("click", () => {
+            const { text } = readSettings();
+            if (!text) {
+                setGenStatus("请先输入内容", true);
+                return;
+            }
+            if (!lastSvg) {
+                setGenStatus("请先生成二维码", true);
+                return;
+            }
+            downloadBlob(lastSvg, "qr-code.svg", "image/svg+xml");
+        });
+
+        [textInput, sizeInput, marginInput, levelInput].forEach((input) => {
+            input.addEventListener("input", generateQr);
+        });
+
+        setEngineTag();
+        generateQr();
+    </script>
+</body>
+</html>
